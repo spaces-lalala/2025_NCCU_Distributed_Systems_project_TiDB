@@ -1,48 +1,94 @@
 <template>
   <el-header class="app-navbar">
-    <div class="logo-container">
-      <router-link to="/">TiDB Shopping</router-link>
-    </div>
-    <el-menu mode="horizontal" :ellipsis="false" class="nav-menu">
-      <el-menu-item index="1"><router-link to="/">Home</router-link></el-menu-item>
-      <el-menu-item index="2"><router-link to="/products">Products</router-link></el-menu-item>
-      <el-menu-item index="3"><router-link to="/cart">Cart</router-link></el-menu-item>
-      <el-menu-item index="4"><router-link to="/profile">Profile</router-link></el-menu-item>
-      <el-menu-item index="5"><router-link to="/login">Login</router-link></el-menu-item>
-    </el-menu>
+    <el-row justify="space-between" align="middle" style="height: 100%;">
+      <el-col :span="6">
+        <router-link to="/" class="logo-link">
+          <!-- <img src="@/assets/images/logo.svg" alt="Logo" class="logo-image" /> -->
+          <span>購物網站</span>
+        </router-link>
+      </el-col>
+      <el-col :span="18">
+        <el-menu mode="horizontal" :router="true" :ellipsis="false" class="nav-menu">
+          <el-menu-item index="/">首頁</el-menu-item>
+          <el-menu-item index="/products">商品列表</el-menu-item>
+          <el-menu-item index="/bestsellers">熱銷排行</el-menu-item>
+          <el-sub-menu index="/user-actions">
+            <template #title>會員</template>
+            <el-menu-item v-if="!isLoggedIn" index="/login">登入</el-menu-item>
+            <el-menu-item v-if="!isLoggedIn" index="/register">註冊</el-menu-item>
+            <el-menu-item v-if="isLoggedIn" index="/profile">會員中心</el-menu-item>
+            <el-menu-item v-if="isLoggedIn" @click="handleLogout">登出</el-menu-item>
+          </el-sub-menu>
+          <el-menu-item index="/cart">
+            <el-icon><ShoppingCart /></el-icon>
+            購物車 <el-badge :value="cartItemCount" :hidden="cartItemCount === 0" class="cart-badge"></el-badge>
+          </el-menu-item>
+        </el-menu>
+      </el-col>
+    </el-row>
   </el-header>
 </template>
 
-<script setup lang="ts">
-// No specific script needed for now
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import { ShoppingCart } from '@element-plus/icons-vue'; // Import icons
+import { useAuthStore } from '@/store/auth';
+import { useCartStore } from '@/store/cart';
+
+const router = useRouter();
+const authStore = useAuthStore();
+const cartStore = useCartStore();
+
+const isLoggedIn = computed(() => authStore.isAuthenticated);
+const cartItemCount = computed(() => cartStore.cartItemCount);
+
+const handleLogout = () => {
+  authStore.logout();
+  ElMessage.success('已成功登出');
+  router.push('/');
+};
+
+// Placeholder for logo - ensure you have a logo.svg in src/assets/images/
+// or update the path accordingly.
 </script>
 
 <style scoped>
 .app-navbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--el-menu-border-color);
-  padding: 0 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 0 20px; /* Add some horizontal padding */
 }
 
-.logo-container a {
-  font-size: 1.5rem;
-  font-weight: bold;
+.logo-link {
+  display: flex;
+  align-items: center;
   text-decoration: none;
-  color: var(--el-text-color-primary);
+  color: #303133; /* Element Plus default text color */
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.logo-image {
+  height: 40px; /* Adjust as needed */
+  margin-right: 10px;
 }
 
 .nav-menu {
   border-bottom: none; /* Remove default border from el-menu */
+  display: flex;
+  justify-content: flex-end; /* Align menu items to the right */
 }
 
-.nav-menu .el-menu-item a {
-  text-decoration: none;
-  color: inherit; /* Ensure link color matches menu item color */
+/* Ensure sub-menu items are also aligned if needed */
+.el-menu--horizontal .el-menu .el-menu-item,
+.el-menu--horizontal .el-menu .el-sub-menu__title {
+  /* Adjust styling for sub-menu items if necessary */
 }
 
-.nav-menu .el-menu-item.is-active a {
-  color: var(--el-color-primary); /* Highlight active link */
+.cart-badge {
+  margin-left: 5px;
+  transform: translateY(-2px); /* Fine-tune badge position */
 }
 </style> 
