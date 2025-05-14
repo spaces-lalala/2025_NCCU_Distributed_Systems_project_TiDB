@@ -1,7 +1,7 @@
 <template>
   <div>
-    <h1>商品列表頁</h1>
-    <!-- Product list content will go here -->
+    <h1>訂單完成</h1>
+    <!-- Order confirmation content will go here -->
   </div>
 </template>
 
@@ -9,7 +9,7 @@
 // import { ref, onMounted } from 'vue';
 
 // onMounted(() => {
-//   console.log('ProductListPage mounted');
+//   console.log('OrderConfirmationPage mounted');
 // });
 </script>
 
