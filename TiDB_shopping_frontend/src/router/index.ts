@@ -70,9 +70,10 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true, title: '結帳' },
   },
   {
-    path: '/order-confirmation',
+    path: '/order-confirmation/:orderId',
     name: 'OrderConfirmation',
     component: OrderConfirmationPage,
+    props: true, // Pass route params as props to the component
     meta: { requiresAuth: true, title: '訂單完成' },
   },
   // Catch-all 404 route - must be the last route
