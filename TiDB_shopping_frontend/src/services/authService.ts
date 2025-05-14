@@ -12,6 +12,31 @@ const API_BASE_URL = '/api';
  * @throws Will throw an error if registration fails.
  */
 export const registerUser = async (userData: UserRegistrationData): Promise<AuthResponse> => {
+  console.log('[AuthService - MOCK] Registering user:', userData);
+  // Simulate API call delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  // Simulate a successful registration
+  if (userData.email === "test@example.com") { // Simulate existing user for testing
+    console.log('[AuthService - MOCK] Simulating registration failure (email exists).');
+    throw new Error('此 Email 地址已被註冊。');
+  }
+
+  console.log('[AuthService - MOCK] Simulating registration success.');
+  return {
+    message: '使用者註冊成功 (模擬)!',
+    // Normally, a real API might return a token and user object upon registration,
+    // but for a simple registration flow, a message might be sufficient,
+    // and the user would then proceed to login.
+    // token: 'mock-jwt-token-on-register',
+    // user: {
+    //   id: 'mock-user-id',
+    //   name: userData.name,
+    //   email: userData.email
+    // }
+  };
+
+  /* Original Axios call - commented out for mock implementation
   try {
     // The actual API endpoint for registration is /api/auth/register
     const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/register`, userData);
@@ -28,6 +53,7 @@ export const registerUser = async (userData: UserRegistrationData): Promise<Auth
     // Fallback for unknown errors
     throw new Error('註冊過程中發生未知錯誤，請稍後再試。');
   }
+  */
 };
 
 // Future authentication functions (login, logout, etc.) can be added here.

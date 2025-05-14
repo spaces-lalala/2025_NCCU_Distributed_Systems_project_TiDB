@@ -8,6 +8,14 @@ export interface UserRegistrationData {
 }
 
 /**
+ * Interface for user login data to be sent to the API.
+ */
+export interface UserLoginData {
+  email: string;
+  password: string;
+}
+
+/**
  * Interface for the expected user object in the authentication response.
  */
 export interface User {
