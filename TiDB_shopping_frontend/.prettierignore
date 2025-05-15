@@ -1,0 +1,10 @@
+# Ignore artifacts:
+dist
+node_modules
+*.log
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Ignore specific files if needed:
+# public/some-legacy-script.js 
