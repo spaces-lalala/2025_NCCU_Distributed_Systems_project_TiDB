@@ -14,13 +14,13 @@
       <el-table :data="cartStore.getCartItems" style="width: 100%" class="cart-table">
         <el-table-column label="商品圖片" width="120">
           <template #default="{ row }">
-            <img :src="row.image_url" :alt="row.name" class="cart-item-image" />
+            <img :src="row.imageUrl" :alt="row.name" class="cart-item-image" />
           </template>
         </el-table-column>
         <el-table-column prop="name" label="商品名稱" min-width="180"></el-table-column>
         <el-table-column label="單價" width="120">
           <template #default="{ row }">
-            ￥{{ row.price.toFixed(2) }}
+            NT$ {{ row.price.toFixed(2) }}
           </template>
         </el-table-column>
         <el-table-column label="數量" width="180">
@@ -37,7 +37,7 @@
         </el-table-column>
         <el-table-column label="小計" width="120">
           <template #default="{ row }">
-            ￥{{ (row.price * row.quantity).toFixed(2) }}
+            NT$ {{ (row.price * row.quantity).toFixed(2) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="100">
@@ -53,7 +53,7 @@
         </div>
         <div class="summary-totals">
           <p class="total-items">總計 {{ cartStore.totalItemQuantity }} 件商品</p>
-          <p class="total-price">總金額: <span class="price-value">￥{{ cartStore.totalPrice.toFixed(2) }}</span></p>
+          <p class="total-price">總金額: <span class="price-value">NT$ {{ cartStore.totalPrice.toFixed(2) }}</span></p>
           <el-button type="primary" size="large" @click="goToCheckout" class="checkout-button">前往結帳</el-button>
         </div>
       </div>

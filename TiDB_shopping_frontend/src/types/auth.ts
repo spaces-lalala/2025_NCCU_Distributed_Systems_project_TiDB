@@ -1,7 +1,7 @@
 /**
  * Interface for user registration data to be sent to the API.
  */
-export interface UserRegistrationData {
+export interface RegistrationData {
   name: string; // Member's name
   email: string;
   password: string;
@@ -10,16 +10,17 @@ export interface UserRegistrationData {
 /**
  * Interface for user login data to be sent to the API.
  */
-export interface UserLoginData {
+export interface LoginCredentials {
   email: string;
   password: string;
 }
 
 /**
  * Interface for the expected user object in the authentication response.
+ * Corresponds to backend's UserResponse model.
  */
 export interface User {
-  id: string | number; // User ID from the backend
+  id: string; // User ID from the backend (should be string)
   name: string;
   email: string;
   // Add other user properties if your API returns them
@@ -27,9 +28,17 @@ export interface User {
 
 /**
  * Interface for the expected response from authentication APIs (login/register).
+ * Corresponds to backend's AuthSuccessResponse model.
  */
 export interface AuthResponse {
-  token?: string; // JWT token
-  user?: User;    // User information
-  message?: string; // Optional success or error message from the API
+  message: string; // Message from the API (e.g., "註冊成功！")
+  token: string;   // JWT token
+  user: User;      // User information
+}
+
+/**
+ * For simple message responses like logout
+ */
+export interface SimpleMessageResponse {
+  message: string;
 } 

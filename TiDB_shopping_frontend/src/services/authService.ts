@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { UserRegistrationData, AuthResponse, UserLoginData } from '@/types/auth';
+import type { RegistrationData, AuthResponse, LoginCredentials, SimpleMessageResponse } from '@/types/auth';
 
 // API Base URL is set to /api as per user's choice.
 // This requires a proxy setup in vite.config.ts for development.
@@ -37,49 +37,22 @@ mockRegisteredUsersDetails.set(preExistingEmail, {
  * @returns A promise that resolves with the authentication response.
  * @throws Will throw an error if registration fails.
  */
-export const registerUser = async (userData: UserRegistrationData): Promise<AuthResponse> => {
-  console.log('[AuthService - MOCK] Registering user:', userData);
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
-  if (mockRegisteredUsersCredentials.has(userData.email)) {
-    console.log('[AuthService - MOCK] Simulating registration failure (email exists).');
-    throw new Error('此 Email 地址已被註冊。');
-  }
-
-  // Store the new user with their actual password for login simulation
-  mockRegisteredUsersCredentials.set(userData.email, userData.password);
-  mockRegisteredUsersDetails.set(userData.email, {
-    id: `mock-id-${userData.email}-${Date.now()}`, // Simple unique ID
-    name: userData.name,
-    email: userData.email
+export const registerUser = async (userData: RegistrationData): Promise<AuthResponse> => {
+  const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(userData),
   });
 
-  console.log('[AuthService - MOCK] Simulating registration success for:', userData.email);
-  console.log('[AuthService - MOCK] Current registered users:', Array.from(mockRegisteredUsersCredentials.keys()));
-  return {
-    message: '使用者註冊成功 (模擬)! 請使用您註冊的密碼登入。',
-    // No token/user returned on register, user must login
-  };
+  const responseData = await response.json(); // Always try to parse JSON
 
-  /* Original Axios call - commented out for mock implementation
-  try {
-    // The actual API endpoint for registration is /api/auth/register
-    const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/register`, userData);
-    return response.data;
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response) {
-      // Try to use the error message from the backend response
-      const backendMessage = error.response.data?.message;
-      throw new Error(backendMessage || '使用者註冊失敗，請檢查您的輸入或稍後再試。');
-    } else if (error instanceof Error) {
-      // For other types of errors (e.g., network errors)
-      throw new Error(`註冊過程中發生錯誤: ${error.message}`);
-    }
-    // Fallback for unknown errors
-    throw new Error('註冊過程中發生未知錯誤，請稍後再試。');
+  if (!response.ok) {
+    // Access detail from responseData, which should now be parsed
+    throw new Error(responseData.detail || '註冊失敗');
   }
-  */
+  return responseData as AuthResponse; // Expecting AuthResponse now
 };
 
 // --- Mock Login User Function ---
@@ -89,28 +62,35 @@ export const registerUser = async (userData: UserRegistrationData): Promise<Auth
  * @returns A promise that resolves with the authentication response.
  * @throws Will throw an error if login fails.
  */
-export const loginUser = async (credentials: UserLoginData): Promise<AuthResponse> => {
-  console.log('[AuthService - MOCK] Logging in user with credentials:', credentials);
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+export const loginUser = async (credentials: LoginCredentials): Promise<AuthResponse> => {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(credentials),
+  });
 
-  const storedPassword = mockRegisteredUsersCredentials.get(credentials.email);
-  const userDetails = mockRegisteredUsersDetails.get(credentials.email);
+  const responseData = await response.json(); // Always try to parse JSON
 
-  if (userDetails && storedPassword && storedPassword === credentials.password) {
-    console.log('[AuthService - MOCK] Simulating login success for:', credentials.email);
-    return {
-      token: `mock-jwt-token-for-${credentials.email}-${Date.now()}`, // Unique token
-      user: userDetails,
-      message: '登入成功 (模擬)!',
-    };
-  } else {
-    console.log('[AuthService - MOCK] Simulating login failure (invalid credentials for):', credentials.email);
-    throw new Error('Email 或密碼錯誤 (模擬)。');
+  if (!response.ok) {
+    // Access detail from responseData, which should now be parsed
+    throw new Error(responseData.detail || '登入失敗');
   }
+  return responseData as AuthResponse; // Return parsed data
+};
+
+export const logoutUser = async (): Promise<SimpleMessageResponse> => {
+  // In a real app, this might call a backend endpoint to invalidate a session/token
+  // For this mock, we just clear local storage in the store.
+  console.log('Mock logoutUser called');
+  // The actual store should handle clearing localStorage, but for safety we can also do it here if needed.
+  // However, it's better for the Pinia store to manage its own state and side effects like localStorage.
+  // localStorage.removeItem('authToken');
+  // localStorage.removeItem('authUser');
+  return { message: '登出成功 (模擬)' };
 };
 
 // Future authentication functions (login, logout, etc.) can be added here.
 // For example:
-// export const loginUser = async (credentials: UserLoginData): Promise<AuthResponse> => { ... };
 // export const logoutUser = async (): Promise<void> => { ... }; 
