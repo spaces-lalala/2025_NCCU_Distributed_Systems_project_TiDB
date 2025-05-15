@@ -71,7 +71,6 @@
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
 import { 
   ElMessage, 
   ElMessageBox, 
@@ -88,26 +87,13 @@ import {
   ElSkeleton 
 } from 'element-plus';
 
+// Import Order type and orderService functions
+import type { Order } from '@/types/order';
+import { getOrders } from '@/services/orderService';
+
 const authStore = useAuthStore();
 const router = useRouter();
 const isLoggingOut = ref(false);
-
-// Define interfaces for Order and OrderItem
-interface OrderItem {
-  productId: string;
-  productName: string;
-  quantity: number;
-  price: number;
-}
-
-interface Order {
-  id: string; 
-  orderNumber: string; 
-  orderDate: string;
-  totalAmount: number;
-  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
-  items: OrderItem[]; 
-}
 
 const orders = ref<Order[]>([]);
 const isLoadingOrders = ref(false);
@@ -116,37 +102,21 @@ const fetchOrdersError = ref<string | null>(null);
 const fetchOrders = async () => {
   if (!authStore.isAuthenticated) {
     fetchOrdersError.value = '請先登入以查看歷史訂單。';
+    // Clear orders if user is not authenticated to prevent showing stale data
+    orders.value = []; 
     return;
   }
   isLoadingOrders.value = true;
   fetchOrdersError.value = null;
   try {
-    const token = authStore.token || localStorage.getItem('authToken'); 
-    if (!token) {
-      fetchOrdersError.value = '驗證失敗，請重新登入。';
-      return;
-    }
-    
-    const response = await axios.get<Order[]>('/api/orders', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    orders.value = response.data;
+    // No need to manually get token, orderService will handle it
+    const fetchedOrders = await getOrders();
+    orders.value = fetchedOrders;
   } catch (error: any) {
-    console.error('Error fetching orders:', error);
-    if (axios.isAxiosError(error)) {
-        if (error.response?.status === 401) {
-            fetchOrdersError.value = '您的登入已過期或無效，請重新登入。';
-        } else if (error.response?.data?.message) {
-            fetchOrdersError.value = `無法載入歷史訂單: ${error.response.data.message}`;
-        } else {
-            fetchOrdersError.value = '無法載入歷史訂單，請稍後再試。';
-        }
-    } else {
-        fetchOrdersError.value = '載入歷史訂單時發生未知錯誤。';
-    }
-    // ElMessage.error(fetchOrdersError.value); // Error is shown in template via ElAlert
+    console.error('Error fetching orders in component:', error);
+    // The error from orderService should already be a user-friendly string
+    fetchOrdersError.value = error.message || '載入歷史訂單時發生未知錯誤。';
+    orders.value = []; // Clear orders on error
   } finally {
     isLoadingOrders.value = false;
   }
@@ -179,7 +149,7 @@ const handleLogout = async () => {
         type: 'warning',
       }
     );
-    authStore.logout(); 
+    authStore.logout();
     ElMessage.success('您已成功登出！');
     router.push('/login');
   } catch (error) {
