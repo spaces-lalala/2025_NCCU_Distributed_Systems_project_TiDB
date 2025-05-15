@@ -1,7 +1,7 @@
 <template>
   <router-link :to="`/product/${product.id}`" class="product-card-link">
     <el-card :body-style="{ padding: '0px' }" class="product-card" shadow="hover">
-      <img :src="product.image_url || defaultImage" class="product-image" @error="onImageError" />
+      <img :src="product.imageUrl || defaultImage" class="product-image" @error="onImageError" />
       <div style="padding: 14px">
         <h3 class="product-name">{{ product.name }}</h3>
         <div class="product-details">

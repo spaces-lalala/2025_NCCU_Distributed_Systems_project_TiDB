@@ -2,12 +2,12 @@
   <div class="product-detail-page">
     <div v-if="product" class="product-content">
       <div class="product-image-container">
-        <img :src="product.image_url" :alt="product.name" class="product-image" />
+        <img :src="product.imageUrl" :alt="product.name" class="product-image" />
       </div>
       <div class="product-info">
         <h1>{{ product.name }}</h1>
         <p class="product-description">{{ product.description }}</p>
-        <p class="product-price">價格: ${{ product.price.toFixed(2) }}</p>
+        <p class="product-price">價格: NT$ {{ product.price.toFixed(2) }}</p>
         <p class="product-stock">庫存: {{ product.stock }} 件</p>
         <div class="product-actions">
           <label for="quantity">數量:</label>
@@ -51,7 +51,7 @@ const mockProducts: Product[] = [
     description: '舒適純棉，印有 TiDB Logo，開發者必備信仰充值潮服。',
     price: 25.00,
     stock: 100,
-    image_url: 'https://via.placeholder.com/400x300.png?text=TiDB+T-Shirt',
+    imageUrl: 'https://via.placeholder.com/400x300.png?text=TiDB+T-Shirt',
     category: '服裝',
   },
   {
@@ -60,7 +60,7 @@ const mockProducts: Product[] = [
     description: '深入淺出 TiDB 架構與應用，從入門到精通，解鎖數據潛能。',
     price: 49.99,
     stock: 50,
-    image_url: 'https://via.placeholder.com/400x300.png?text=TiDB+Handbook',
+    imageUrl: 'https://via.placeholder.com/400x300.png?text=TiDB+Handbook',
     category: '書籍',
   },
   {
@@ -69,7 +69,7 @@ const mockProducts: Product[] = [
     description: '免費體驗 TiDB Cloud Developer Tier 一個月，輕鬆部署與管理您的 TiDB 叢集。',
     price: 0.00,
     stock: 200,
-    image_url: 'https://via.placeholder.com/400x300.png?text=TiDB+Cloud+Voucher',
+    imageUrl: 'https://via.placeholder.com/400x300.png?text=TiDB+Cloud+Voucher',
     category: '服務',
   },
   {
@@ -78,7 +78,7 @@ const mockProducts: Product[] = [
     description: '機械鍵盤愛好者福音，PingCAP 特色設計，為您的鍵盤增添個性。',
     price: 15.00,
     stock: 75,
-    image_url: 'https://via.placeholder.com/400x300.png?text=PingCAP+Keycaps',
+    imageUrl: 'https://via.placeholder.com/400x300.png?text=PingCAP+Keycaps',
     category: '配件',
   }
 ];

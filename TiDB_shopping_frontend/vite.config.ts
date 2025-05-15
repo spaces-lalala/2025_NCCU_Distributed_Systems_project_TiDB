@@ -16,7 +16,7 @@
               '/api': {
                 target: 'http://localhost:8000', // 指向您的模擬後端
                 changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/api/, '') // 移除 /api 前綴
+                // rewrite: (path) => path.replace(/^\/api/, '') // 移除 /api 前綴
               },
             }
           }

@@ -1,22 +1,117 @@
 <template>
   <div class="best-sellers-page">
-    <h2>熱銷排行榜</h2>
-    <p>熱銷商品列表待開發...</p>
+    <el-container>
+      <el-main>
+        <div class="page-header">
+          <h1>熱銷排行榜</h1>
+          <p>看看大家都在買什麼！</p>
+        </div>
+
+        <div v-if="isLoading" class="loading-section">
+          <el-skeleton :rows="5" animated />
+        </div>
+
+        <div v-else-if="error" class="error-section">
+          <el-alert :title="error" type="error" show-icon :closable="false"></el-alert>
+        </div>
+
+        <div v-else-if="bestSellers.length > 0" class="products-grid">
+          <product-card 
+            v-for="product in bestSellers" 
+            :key="product.id" 
+            :product="product"
+          />
+        </div>
+
+        <div v-else class="no-products-section">
+          <el-empty description="目前暫無熱銷商品數據，敬請期待！"></el-empty>
+        </div>
+      </el-main>
+    </el-container>
   </div>
 </template>
 
 <script setup lang="ts">
-// Logic for best sellers page will go here
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
+import ProductCard from '@/components/product/ProductCard.vue'; // Corrected path
+import type { Product } from '@/types/product'; // Assuming a global product type definition
+import { ElContainer, ElMain, ElAlert, ElEmpty, ElSkeleton } from 'element-plus';
+
+// If @/types/product.ts doesn't exist or is different, define Product here or create the file
+// For example:
+// interface Product {
+//   id: string | number;
+//   name: string;
+//   price: number;
+//   imageUrl?: string;
+//   description?: string;
+//   // ... other properties ProductCard might expect
+// }
+
+const bestSellers = ref<Product[]>([]);
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+
+const fetchBestSellers = async () => {
+  isLoading.value = true;
+  error.value = null;
+  try {
+    // Replace with your actual API endpoint for best sellers
+    const response = await axios.get<Product[]>('/api/products/bestsellers');
+    bestSellers.value = response.data;
+  } catch (err: any) {
+    console.error('Error fetching best sellers:', err);
+    if (axios.isAxiosError(err) && err.response?.data?.message) {
+        error.value = `無法載入熱銷商品: ${err.response.data.message}`;
+    } else {
+        error.value = '無法載入熱銷商品，請稍後再試。';
+    }
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 onMounted(() => {
-  console.log('BestSellersPage mounted');
+  fetchBestSellers();
 });
 </script>
 
 <style scoped>
 .best-sellers-page {
   padding: 20px;
-  text-align: center;
 }
+
+.page-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.page-header h1 {
+  font-size: 2.5em;
+  color: #303133;
+  margin-bottom: 10px;
+}
+
+.page-header p {
+  font-size: 1.2em;
+  color: #606266;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  justify-content: center;
+}
+
+.loading-section,
+.error-section,
+.no-products-section {
+  padding: 40px 20px;
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* Add styles for ProductCard if it doesn't have its own encapsulating styles for grid display */
 </style> 

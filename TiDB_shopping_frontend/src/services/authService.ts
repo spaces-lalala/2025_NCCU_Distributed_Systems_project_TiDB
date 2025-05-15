@@ -90,27 +90,23 @@ export const registerUser = async (userData: UserRegistrationData): Promise<Auth
  * @throws Will throw an error if login fails.
  */
 export const loginUser = async (credentials: UserLoginData): Promise<AuthResponse> => {
-  console.log('[AuthService - MOCK] Logging in user with credentials:', credentials);
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
-  const storedPassword = mockRegisteredUsersCredentials.get(credentials.email);
-  const userDetails = mockRegisteredUsersDetails.get(credentials.email);
-
-  if (userDetails && storedPassword && storedPassword === credentials.password) {
-    console.log('[AuthService - MOCK] Simulating login success for:', credentials.email);
-    return {
-      token: `mock-jwt-token-for-${credentials.email}-${Date.now()}`, // Unique token
-      user: userDetails,
-      message: '登入成功 (模擬)!',
-    };
-  } else {
-    console.log('[AuthService - MOCK] Simulating login failure (invalid credentials for):', credentials.email);
-    throw new Error('Email 或密碼錯誤 (模擬)。');
+  console.log('[AuthService] Logging in user with backend:', credentials);
+  try {
+    const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/login`, credentials);
+    console.log('[AuthService] Login response from backend:', response.data);
+    return response.data; // Backend should return { message, token, user }
+  } catch (error: unknown) {
+    console.error('[AuthService] Error during login with backend:', error);
+    if (axios.isAxiosError(error) && error.response) {
+      const backendMessage = error.response.data?.message || error.response.data?.detail;
+      throw new Error(backendMessage || 'Email 或密碼錯誤，請檢查您的輸入或稍後再試。');
+    } else if (error instanceof Error) {
+      throw new Error(`登入過程中發生錯誤: ${error.message}`);
+    }
+    throw new Error('登入過程中發生未知錯誤，請稍後再試。');
   }
 };
 
 // Future authentication functions (login, logout, etc.) can be added here.
 // For example:
-// export const loginUser = async (credentials: UserLoginData): Promise<AuthResponse> => { ... };
 // export const logoutUser = async (): Promise<void> => { ... }; 
