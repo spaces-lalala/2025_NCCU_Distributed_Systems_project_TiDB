@@ -5,6 +5,32 @@ import type { UserRegistrationData, AuthResponse, UserLoginData } from '@/types/
 // This requires a proxy setup in vite.config.ts for development.
 const API_BASE_URL = '/api';
 
+// --- Mock User Storage ---
+// In a real backend, this would be a database.
+// For mocking, we'll use a Map to store registered users: { email: password }
+// And another Map for user details: { email: { id: string, name: string, email: string } }
+const mockRegisteredUsersCredentials = new Map<string, string>();
+const mockRegisteredUsersDetails = new Map<string, { id: string; name: string; email: string }>();
+
+// Pre-populate with the default user from the plan, so it's always available for login
+const defaultUserEmail = 'user@example.com';
+const defaultUserPassword = 'password123'; // As per plan
+const defaultUserName = '普通用戶A'; // As per plan
+mockRegisteredUsersCredentials.set(defaultUserEmail, defaultUserPassword);
+mockRegisteredUsersDetails.set(defaultUserEmail, {
+  id: `mock-id-${defaultUserEmail}`,
+  name: defaultUserName,
+  email: defaultUserEmail
+});
+// Add the 'existeduser@example.com' to simulate it being pre-registered for testing duplicate registration
+const preExistingEmail = 'existeduser@example.com';
+mockRegisteredUsersCredentials.set(preExistingEmail, 'password123'); // Give it a dummy password
+mockRegisteredUsersDetails.set(preExistingEmail, {
+    id: `mock-id-${preExistingEmail}`,
+    name: 'Already Exists',
+    email: preExistingEmail
+});
+
 /**
  * Registers a new user.
  * @param userData - The user registration data (name, email, password).
@@ -16,24 +42,24 @@ export const registerUser = async (userData: UserRegistrationData): Promise<Auth
   // Simulate API call delay
   await new Promise(resolve => setTimeout(resolve, 1000));
 
-  // Simulate a successful registration
-  if (userData.email === "test@example.com") { // Simulate existing user for testing
+  if (mockRegisteredUsersCredentials.has(userData.email)) {
     console.log('[AuthService - MOCK] Simulating registration failure (email exists).');
     throw new Error('此 Email 地址已被註冊。');
   }
 
-  console.log('[AuthService - MOCK] Simulating registration success.');
+  // Store the new user with their actual password for login simulation
+  mockRegisteredUsersCredentials.set(userData.email, userData.password);
+  mockRegisteredUsersDetails.set(userData.email, {
+    id: `mock-id-${userData.email}-${Date.now()}`, // Simple unique ID
+    name: userData.name,
+    email: userData.email
+  });
+
+  console.log('[AuthService - MOCK] Simulating registration success for:', userData.email);
+  console.log('[AuthService - MOCK] Current registered users:', Array.from(mockRegisteredUsersCredentials.keys()));
   return {
-    message: '使用者註冊成功 (模擬)!',
-    // Normally, a real API might return a token and user object upon registration,
-    // but for a simple registration flow, a message might be sufficient,
-    // and the user would then proceed to login.
-    // token: 'mock-jwt-token-on-register',
-    // user: {
-    //   id: 'mock-user-id',
-    //   name: userData.name,
-    //   email: userData.email
-    // }
+    message: '使用者註冊成功 (模擬)! 請使用您註冊的密碼登入。',
+    // No token/user returned on register, user must login
   };
 
   /* Original Axios call - commented out for mock implementation
@@ -68,22 +94,18 @@ export const loginUser = async (credentials: UserLoginData): Promise<AuthRespons
   // Simulate API call delay
   await new Promise(resolve => setTimeout(resolve, 1000));
 
-  // Mocked user data - use details from企劃書 4.2. 預設使用者帳號
-  const mockUser = {
-    id: 'user-001',
-    name: '普通用戶A',
-    email: 'user@example.com'
-  };
+  const storedPassword = mockRegisteredUsersCredentials.get(credentials.email);
+  const userDetails = mockRegisteredUsersDetails.get(credentials.email);
 
-  if (credentials.email === mockUser.email && credentials.password === 'password123') {
-    console.log('[AuthService - MOCK] Simulating login success.');
+  if (userDetails && storedPassword && storedPassword === credentials.password) {
+    console.log('[AuthService - MOCK] Simulating login success for:', credentials.email);
     return {
-      token: 'mock-jwt-token-for-user001',
-      user: mockUser,
+      token: `mock-jwt-token-for-${credentials.email}-${Date.now()}`, // Unique token
+      user: userDetails,
       message: '登入成功 (模擬)!',
     };
   } else {
-    console.log('[AuthService - MOCK] Simulating login failure (invalid credentials).');
+    console.log('[AuthService - MOCK] Simulating login failure (invalid credentials for):', credentials.email);
     throw new Error('Email 或密碼錯誤 (模擬)。');
   }
 };

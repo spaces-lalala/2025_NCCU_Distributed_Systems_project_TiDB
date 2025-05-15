@@ -1,0 +1,34 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+# Note: Replace 'backend_venv' with your actual venv name if different
+backend_venv/
+venv/
+.venv/
+ENV/
+env/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Local environment variables
+.env
+
+# IDE / Editor specific (if any very specific to backend, otherwise keep in root .gitignore)
+# e.g., specific database files or logs not covered by root
+
+# Coverage reports
+.coverage
+coverage.xml
+htmlcov/
+
+# SQLite (if used locally for testing, and not versioned)
+# *.sqlite3
+# *.db 

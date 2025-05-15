@@ -50,7 +50,7 @@
     ```bash
     npm run dev
     ```
-    *   Vite 會提供一個本地訪問網址，通常是 `http://localhost:5002` 或 `http://localhost:5003` (如果預設端口被佔用)。請注意終端機輸出的確切網址。
+    *   Vite 會提供一個本地訪問網址，通常是 `http://localhost:5002`(如果預設端口被佔用)。請注意終端機輸出的確切網址。
     *   此命令會啟動帶有熱模塊替換 (HMR) 的開發伺服器，方便開發。
     *   **保持此終端機開啟運行。**
 
@@ -59,35 +59,51 @@
 
 ## 3. 訪問與測試網站功能
 
-### 3.1 測試使用者註冊功能 (目前主要可測功能)
+### 3.1 測試使用者註冊與登入功能
 
 1.  **訪問頁面**:
     *   在瀏覽器中打開前端開發伺服器提供的網址 (例如 `http://localhost:5002`)。
-    *   導航到註冊頁面，通常路徑為 `/register` (例如 `http://localhost:5002/register`)。
+    *   導航到註冊頁面 (`/register`) 或登入頁面 (`/login`)。
 
-2.  **執行操作**:
-    *   打開瀏覽器開發者工具 (通常按 `F12`)，並切換到「網路 (Network)」和「主控台 (Console)」分頁，以便觀察 API 請求和任何潛在錯誤。
-    *   在註冊表單中填寫以下範例資訊 (或您自己的測試資料)：
-        *   會員名稱: `TestUser`
-        *   Email: `test@example.com`
-        *   密碼: `password123`
-        *   確認密碼: `password123`
+2.  **執行操作 (註冊)**:
+    *   打開瀏覽器開發者工具 (通常按 `F12`)，並切換到「網路 (Network)」和「主控台 (Console)」分頁。
+    *   在註冊表單 (`/register`) 中填寫新的使用者資訊，例如:
+        *   會員名稱: `NewUserOne`
+        *   Email: `newuser1@example.com`
+        *   密碼: `password123` (或您選擇的任何密碼)
+        *   確認密碼: `password123` (與密碼一致)
     *   點擊「註冊」按鈕。
+    *   **預期行為 (成功註冊)**:
+        *   應顯示成功提示訊息 (例如 "使用者註冊成功 (模擬)! 請使用您註冊的密碼登入。")。
+        *   頁面應自動跳轉到登入頁面 (`/login`)。
+        *   在瀏覽器 Console 中，您可以看到 `[AuthService - MOCK] Simulating registration success for: newuser1@example.com` 以及當前所有已註冊用戶的 Email 列表。
+    *   **測試重複註冊**:
+        *   再次嘗試使用 `newuser1@example.com` 或預設的 `existeduser@example.com` 進行註冊。
+        *   **預期行為**: 應顯示錯誤訊息 "此 Email 地址已被註冊。"。
 
-3.  **觀察結果與預期行為**:
+3.  **執行操作 (登入)**:
+    *   在登入表單 (`/login`) 中嘗試以下操作:
+        *   **使用剛註冊的帳號登入**: 輸入 `newuser1@example.com` 和您設定的密碼。
+        *   **使用預設帳號登入**: 輸入 `user@example.com` 和密碼 `password123`。
+        *   **嘗試錯誤密碼**: 使用已註冊的 Email 和一個錯誤的密碼。
+    *   **預期行為 (成功登入)**:
+        *   應顯示成功提示訊息 (例如 "登入成功 (模擬)!")。
+        *   頁面應自動跳轉到首頁 (`/`) 或之前嘗試訪問的頁面。
+        *   導航欄應更新，顯示會員相關連結 (如「會員中心」、「登出」)。
+        *   在瀏覽器 Console 中，您可以看到 `[AuthService - MOCK] Simulating login success for: <email@example.com>`。
+    *   **預期行為 (登入失敗)**:
+        *   應顯示錯誤訊息 "Email 或密碼錯誤 (模擬)。"。
+
+4.  **觀察結果與預期行為 (通用)**:
 
     *   **前端介面**:
-        *   表單驗證：嘗試提交空表單、格式錯誤的 Email、不一致的密碼，應能看到相應的錯誤提示。
-        *   成功註冊：
-            *   應顯示成功提示訊息 (例如 "註冊成功！將跳轉至登入頁面...")。
-            *   頁面應自動跳轉到登入頁面 (`/login`)。
-        *   失敗註冊：
-            *   若後端返回錯誤 (例如 Email 已被註冊)，應顯示相應的錯誤訊息。
+        *   表單驗證：嘗試提交空表單、格式錯誤的 Email、不一致的密碼 (註冊時)，應能看到相應的錯誤提示。
     *   **瀏覽器開發者工具 - 網路 (Network) 分頁**:
-        *   應看到一個向 `/api/auth/register` 發出的 `POST` 請求。
-        *   請求的 Payload (負載) 應包含您輸入的 `name`, `email`, `password`。
-        *   成功時，請求狀態碼應為 `200 OK` 或 `201 Created` (依後端實現而定，目前模擬後端是 `200 OK`)。
-        *   成功時，回應 (Response) 內容應為模擬後端回傳的 JSON，包含 `token` 和 `user` 物件 (例如：`{"token": "fake-jwt-token", "user": {"id": "1", "name": "TestUser", "email": "test@example.com"}, "message": "使用者註冊成功"}`)。
+        *   註冊時，應看到一個向 `/api/auth/register` 發出的 `POST` 請求。請求的 Payload (負載) 應包含您輸入的 `name`, `email`, `password`。
+        *   登入時，應看到一個向 `/api/auth/login` 發出的 `POST` 請求。請求的 Payload (負載) 應包含您輸入的 `email`, `password`。
+        *   成功時，請求狀態碼應為 `200 OK` (依後端實現而定，目前模擬後端是 `200 OK`，雖然真實後端註冊成功可能是 `201 Created`)。
+        *   成功註冊時，回應 (Response) 內容應為模擬後端回傳的 JSON，包含 `message` (例如：`{"message":"使用者註冊成功 (模擬)! 請使用您註冊的密碼登入。"}`)。
+        *   成功登入時，回應 (Response) 內容應為模擬後端回傳的 JSON，包含 `token`, `user` 物件, 和 `message` (例如：`{"token":"mock-jwt-token-for-user@example.com-167...","user":{"id":"mock-id-user@example.com","name":"普通用戶A","email":"user@example.com"},"message":"登入成功 (模擬)!"}`)
     *   **瀏覽器開發者工具 - 主控台 (Console) 分頁**:
         *   不應有紅色 JavaScript 錯誤。
         *   可能會看到一些 `console.log` 的調試輸出，有助於追蹤流程。
