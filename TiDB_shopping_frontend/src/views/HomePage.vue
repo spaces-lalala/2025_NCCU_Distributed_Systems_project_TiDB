@@ -7,7 +7,9 @@
         <div class="hero-content">
           <h2>探索最新商品</h2>
           <p>發現為您精心挑選的優質產品</p>
+          <router-link to="/products">
           <el-button type="primary" size="large">立即選購</el-button>
+          </router-link>
         </div>
       </el-col>
     </el-row>
