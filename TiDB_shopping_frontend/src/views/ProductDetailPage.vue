@@ -80,6 +80,15 @@ const mockProducts: Product[] = [
     stock: 75,
     imageUrl: 'https://via.placeholder.com/400x300.png?text=PingCAP+Keycaps',
     category: '配件',
+  },
+  {
+    id: '5',
+    name: 'TiDB牌純棉被',
+    description: '讓你蓋上之後，連作夢都在想TiDB該如何使用。',
+    price: 400.00,
+    stock: 50,
+    imageUrl: 'https://via.placeholder.com/400x300.png?text=PingCAP+Keycaps',
+    category: '家具',
   }
 ];
 

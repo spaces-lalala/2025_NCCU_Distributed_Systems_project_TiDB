@@ -11,6 +11,7 @@
           <el-checkbox label="書籍">書籍</el-checkbox>
           <el-checkbox label="服務">服務</el-checkbox>
           <el-checkbox label="配件">配件</el-checkbox>
+          <el-checkbox label="家具">家具</el-checkbox>
         </el-checkbox-group>
       </div>
       <el-divider />
@@ -19,7 +20,7 @@
         <el-slider
           v-model="priceRange"
           range
-          :max="1000"
+          :max="500"
           :marks="{0:'NT$0', 500:'NT$500', 1000:'NT$1000+'}"
           show-stops
         />
@@ -93,6 +94,7 @@
             <el-checkbox label="書籍">書籍</el-checkbox>
             <el-checkbox label="服務">服務</el-checkbox>
             <el-checkbox label="配件">配件</el-checkbox>
+            <el-checkbox label="家具">家具</el-checkbox>
             </el-checkbox-group>
         </div>
         <el-divider />
@@ -101,7 +103,7 @@
             <el-slider
               v-model="priceRange"
               range
-              :max="1000"
+              :max="500"
               :marks="{0:'NT$0', 500:'NT$500', 1000:'NT$1000+'}"
               show-stops
             />
@@ -162,16 +164,9 @@ const fetchProducts = async () => {
   const mockProducts: Product[] = [
     { id: '1', name: 'TiDB 官方限量版 T-Shirt', description: '舒適純棉，印有 TiDB Logo，開發者必備信仰充值潮服。', price: 25.00, stock: 100, image_url: 'https://via.placeholder.com/300x200.png?text=TiDB+T-Shirt', category: '服裝' },
     { id: '2', name: '高效能HTAP資料庫實戰手冊', description: '深入淺出 TiDB 架構與應用，從入門到精通，解鎖數據潛能。', price: 49.99, stock: 50, image_url: 'https://via.placeholder.com/300x200.png?text=TiDB+Handbook', category: '書籍' },
-    { id: '3', name: 'TiDB 雲服務體驗券 (1個月)', description: '免費體驗 TiDB Cloud Developer Tier 一個月，輕鬆部署與管理您的 TiDB 叢集。', price: 1.00, stock: 200, image_url: 'https://via.placeholder.com/300x200.png?text=TiDB+Cloud+Voucher', category: '服務' },
+    { id: '3', name: 'TiDB 雲服務體驗券 (1個月)', description: '免費體驗 TiDB Cloud Developer Tier 一個月，輕鬆部署與管理您的 TiDB 叢集。', price: 0.00, stock: 200, image_url: 'https://via.placeholder.com/300x200.png?text=TiDB+Cloud+Voucher', category: '服務' },
     { id: '4', name: 'PingCAP 定製鍵帽組', description: '機械鍵盤愛好者福音，PingCAP 特色設計，為您的鍵盤增添個性。', price: 15.00, stock: 75, image_url: 'https://via.placeholder.com/300x200.png?text=PingCAP+Keycaps', category: '配件' },
-    { id: '5', name: '另一件 T-Shirt', description: '另一件高品質純棉T恤。', price: 30.00, stock: 100, image_url: 'https://via.placeholder.com/300x200.png?text=Another+T-Shirt', category: '服裝' },
-    { id: '6', name: '資料庫設計指南', description: '全面解析資料庫設計原則與實踐。', price: 55.99, stock: 50, image_url: 'https://via.placeholder.com/300x200.png?text=DB+Design+Guide', category: '書籍' },
-    { id: '7', name: '進階雲服務包', description: '包含更多高級功能的雲服務套餐。', price: 99.00, stock: 200, image_url: 'https://via.placeholder.com/300x200.png?text=Advanced+Cloud+Pack', category: '服務' },
-    { id: '8', name: '開發者貼紙組', description: '多款酷炫開發者主題貼紙。', price: 5.00, stock: 75, image_url: 'https://via.placeholder.com/300x200.png?text=Dev+Stickers', category: '配件' },
-    { id: '9', name: 'TiDB 紀念馬克杯', description: '印有TiDB Logo的精美馬克杯。', price: 18.00, stock: 60, image_url: 'https://via.placeholder.com/300x200.png?text=TiDB+Mug', category: '配件' },
-    { id: '10', name: '資料庫趨勢分析報告', description: '年度資料庫行業趨勢深度分析。', price: 199.00, stock: 20, image_url: 'https://via.placeholder.com/300x200.png?text=DB+Trends+Report', category: '書籍' },
-    { id: '11', name: 'TiDB Polo衫', description: '專業且舒適的Polo衫，適合各種場合。', price: 35.00, stock: 80, image_url: 'https://via.placeholder.com/300x200.png?text=TiDB+Polo', category: '服裝' },
-    { id: '12', name: 'TiDB 貼紙大禮包', description: '包含多種設計的TiDB貼紙。', price: 9.99, stock: 150, image_url: 'https://via.placeholder.com/300x200.png?text=TiDB+Sticker+Pack', category: '配件' },
+    { id: '5', name: 'TiDB牌純棉被', description: '讓你蓋上之後，連作夢都在想TiDB該如何使用。', price: 400.00, stock: 50, image_url: 'https://via.placeholder.com/300x200.png?text=Another+T-Shirt', category: '家具' },
   ];
   allProducts.value = mockProducts;
   applyFiltersAndSort();

@@ -4,6 +4,7 @@
       <img :src="product.imageUrl || defaultImage" class="product-image" @error="onImageError" />
       <div style="padding: 14px">
         <h3 class="product-name">{{ product.name }}</h3>
+        <p class="product-description">{{ product.description }}</p>
         <div class="product-details">
           <span class="product-price">NT$ {{ product.price.toFixed(2) }}</span>
           <!-- You can add more details here, like stock, category, etc. -->

@@ -57,9 +57,32 @@ const fetchBestSellers = async () => {
   isLoading.value = true;
   error.value = null;
   try {
-    // Replace with your actual API endpoint for best sellers
-    const response = await axios.get<Product[]>('/api/products/bestsellers');
-    bestSellers.value = response.data;
+    const response = await axios.get('/api/products/bestsellers');
+    const bestSellerMap: Record<string, Product & { totalSold: number }> = {};
+
+    // 用來儲存價格與圖片等資訊
+    for (const item of response.data) {
+      const id = item.productId;
+
+      if (!bestSellerMap[id]) {
+        // 模擬從 mock 資料取得價格與圖片（這邊假設每個 item 都有 price 和 imageUrl）
+        bestSellerMap[id] = {
+          id,
+          name: item.productName,
+          price: item.price ?? 0,
+          imageUrl: item.imageUrl ?? '', // 如果你沒有 imageUrl，可以自己用 Map 模擬
+          description: '',
+          totalSold: item.totalSold ?? 0,
+        };
+      } else {
+        bestSellerMap[id].totalSold += item.totalSold;
+      }
+
+      // 更新描述
+      bestSellerMap[id].description = `已售出 ${bestSellerMap[id].totalSold} 件`;
+    }
+
+    bestSellers.value = Object.values(bestSellerMap);
   } catch (err: any) {
     console.error('Error fetching best sellers:', err);
     if (axios.isAxiosError(err) && err.response?.data?.message) {

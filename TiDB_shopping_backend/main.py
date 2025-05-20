@@ -56,6 +56,12 @@ class OrderCreationRequest(BaseModel): # Add this model for creating new orders
 # class OrdersResponse(BaseModel):
 #     orders: List[OrderBase]
 
+# --- Bestseller Models ---
+class BestSellerProduct(BaseModel):
+    productId: str
+    productName: str
+    totalSold: int
+
 # --- Mock Authentication ---
 async def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
     if not authorization:
@@ -243,6 +249,22 @@ async def mock_create_order(order_data: OrderCreationRequest, current_user_id: s
     
     print(f"模擬後端：為使用者 {current_user_id} 建立新訂單，回傳回應: {new_order.model_dump()}")
     return new_order
+
+@app.get("/api/products/bestsellers", response_model=List[BestSellerProduct])
+async def get_bestsellers():
+    sales = {}
+    for order in mock_all_users_orders:
+        for item in order.items:
+            key = item.productId
+            if key not in sales:
+                sales[key] = {"productName": item.productName, "totalSold": 0}
+            sales[key]["totalSold"] += item.quantity
+    sorted_sales = sorted([
+        BestSellerProduct(productId=pid, productName=info["productName"], totalSold=info["totalSold"])
+        for pid, info in sales.items()
+    ], key=lambda x: x.totalSold, reverse=True)
+    return sorted_sales
+
 
 # --- Optional: Root endpoint for testing if the server is up ---
 @app.get("/")
