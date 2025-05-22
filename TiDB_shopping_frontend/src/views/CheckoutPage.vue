@@ -34,14 +34,14 @@
             <el-divider content-position="left"><h3>配送與支付</h3></el-divider>
             <el-form-item label="配送方式" prop="shippingMethod">
               <el-radio-group v-model="shippingForm.shippingMethod">
-                <el-radio label="standard">標準宅配</el-radio>
-                <el-radio label="express">快速到貨 (費用 NT$ 100)</el-radio>
+                <el-radio value="standard">標準宅配</el-radio>
+                <el-radio value="express">快速到貨 (費用 NT$ 100)</el-radio>
               </el-radio-group>
             </el-form-item>
             <el-form-item label="支付方式" prop="paymentMethod">
               <el-radio-group v-model="shippingForm.paymentMethod">
-                <el-radio label="cod">貨到付款</el-radio>
-                <el-radio label="credit_card_mock">信用卡 (模擬)</el-radio>
+                <el-radio value="cod">貨到付款</el-radio>
+                <el-radio value="credit_card_mock">信用卡 (模擬)</el-radio>
               </el-radio-group>
             </el-form-item>
             <el-form-item label="訂單備註 (可選)" prop="notes">
@@ -101,8 +101,8 @@ import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElForm, ElFormItem, ElInput, ElRadioGroup, ElRadio, ElButton, ElCard, ElRow, ElCol, ElDivider, ElEmpty } from 'element-plus';
 import type { FormInstance, FormRules } from 'element-plus';
-import { submitOrder as apiSubmitOrder } from '@/services/orderService'; // Will create this service
-import type { OrderPayload, OrderResponse } from '@/types/order'; // Will create these types
+import { createOrder } from '@/services/orderService';
+import type { OrderCreationPayload, Order, OrderItemForCreation } from '@/types/order';
 
 const cartStore = useCartStore();
 const authStore = useAuthStore();
@@ -156,30 +156,29 @@ const handleSubmitOrder = async () => {
     if (valid) {
       isSubmitting.value = true;
       try {
-        const orderPayload: OrderPayload = {
-          customer_details: {
-            name: shippingForm.name,
-            phone: shippingForm.phone,
-            address: shippingForm.address,
-            email: authStore.user?.email || 'guest@example.com' // Fallback if not logged in or no email
-          },
-          items: cartStore.getCartItems.map(item => ({ 
-            product_id: item.id, 
-            quantity: item.quantity, 
-            price_at_purchase: item.price // Store price at time of purchase
-          })),
-          total_amount: grandTotal.value,
-          shipping_method: shippingForm.shippingMethod,
-          payment_method: shippingForm.paymentMethod,
-          notes: shippingForm.notes,
-          status: 'pending' // Initial order status
-        };
-        console.log('Submitting order (mock):', orderPayload);
-        const response: OrderResponse = await apiSubmitOrder(orderPayload); // Mocked API call
+        const itemsForApi: OrderItemForCreation[] = cartStore.getCartItems.map(item => ({
+          productId: item.id,       // Changed from product_id, assuming item.id is productId
+          productName: item.name,   // Added, assuming item.name is productName
+          quantity: item.quantity,
+          price: item.price         // Assuming item.price is unit price
+        }));
 
-        ElMessage.success(response.message || '訂單提交成功！');
-        cartStore.clearCart(); // Clear cart after successful order
-        router.push({ name: 'OrderConfirmation', params: { orderId: response.order_id } });
+        const payloadForApi: OrderCreationPayload = {
+          items: itemsForApi,
+          totalAmount: grandTotal.value, // Changed from total_amount
+        };
+
+        const createdOrder: Order = await createOrder(payloadForApi);
+
+        ElMessage.success(`訂單已成功提交！訂單編號: ${createdOrder.orderNumber}`);
+        cartStore.clearCart();
+        router.push({
+          name: 'OrderConfirmation',
+          params: { 
+            orderId: createdOrder.id,
+            orderNumber: createdOrder.orderNumber
+          }
+        });
 
       } catch (error: any) {
         ElMessage.error(error.message || '訂單提交失敗，請稍後再試。');
@@ -189,7 +188,6 @@ const handleSubmitOrder = async () => {
       }
     } else {
       ElMessage.error('表單資料有誤，請檢查後再提交。');
-      return false;
     }
   });
 };

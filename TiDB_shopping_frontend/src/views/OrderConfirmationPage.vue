@@ -7,9 +7,9 @@
       <h1>訂單提交成功！</h1>
       <p class="thank-you-message">感謝您的購買，我們已收到您的訂單。</p>
       
-      <div v-if="orderId" class="order-details">
-        <p>您的訂單編號是：<strong>{{ orderId }}</strong></p>
-        <p>我們會盡快為您處理，您可以隨時在會員中心追蹤訂單狀態。(此功能待開發)</p>
+      <div v-if="displayOrderNumber" class="order-details">
+        <p>您的訂單編號是：<strong>{{ displayOrderNumber }}</strong></p>
+        <p>我們會盡快為您處理，您可以隨時在會員中心追蹤訂單狀態。</p>
       </div>
 
       <div v-else class="order-details-error">
@@ -20,7 +20,7 @@
         <router-link to="/">
           <el-button type="primary" size="large">返回首頁</el-button>
         </router-link>
-        <router-link to="/member/orders" v-if="authStore.isLoggedIn"> <!-- Assuming /member/orders is the route for order history -->
+        <router-link :to="{ name: 'MemberProfile' }" v-if="authStore.isAuthenticated">
           <el-button type="default" size="large" style="margin-left: 10px;">查看我的訂單</el-button>
         </router-link>
       </div>
@@ -38,12 +38,24 @@ import { CircleCheckFilled } from '@element-plus/icons-vue';
 const route = useRoute();
 const authStore = useAuthStore();
 const orderId = ref<string | null>(null);
+const displayOrderNumber = ref<string | null>(null);
 
 onMounted(() => {
-  if (route.params.orderId) {
-    orderId.value = Array.isArray(route.params.orderId) ? route.params.orderId[0] : route.params.orderId;
-  } else {
-    console.warn('No orderId found in route params for OrderConfirmationPage');
+  const paramsOrderId = route.params.orderId;
+  const paramsOrderNumber = route.params.orderNumber;
+
+  if (paramsOrderNumber) {
+    displayOrderNumber.value = Array.isArray(paramsOrderNumber) ? paramsOrderNumber[0] : paramsOrderNumber;
+  } else if (paramsOrderId) {
+    displayOrderNumber.value = Array.isArray(paramsOrderId) ? paramsOrderId[0] : paramsOrderId;
+  }
+
+  if (paramsOrderId) {
+    orderId.value = Array.isArray(paramsOrderId) ? paramsOrderId[0] : paramsOrderId;
+  } 
+  
+  if (!displayOrderNumber.value) {
+    console.warn('No orderId or orderNumber found in route params for OrderConfirmationPage');
   }
 });
 </script>

@@ -1,46 +1,47 @@
 /**
- * @interface OrderItemPayload
- * @description Represents a single item within an order payload.
+ * Represents an item when creating an order.
+ * Backend's OrderItemBase for creation requires productId, productName, quantity, and price.
  */
-export interface OrderItemPayload {
-  product_id: string | number; // Assuming product_id can be string or number
+export interface OrderItemForCreation {
+  productId: string;
+  productName: string;
   quantity: number;
-  price_at_purchase: number; // Price of the item at the time of purchase
+  price: number; // Price per unit at the time of purchase
 }
 
 /**
- * @interface CustomerDetailsPayload
- * @description Represents customer details in the order payload.
+ * Payload for creating a new order.
+ * This should match the fields expected by the POST /api/orders endpoint.
  */
-export interface CustomerDetailsPayload {
-  name: string;
-  phone: string;
-  address: string;
-  email: string;
+export interface OrderCreationPayload {
+  items: OrderItemForCreation[];
+  totalAmount: number;
 }
 
 /**
- * @interface OrderPayload
- * @description Defines the structure for submitting a new order.
+ * Represents an item within a retrieved order.
+ * Corresponds to backend's OrderItemBase as returned in an Order.
  */
-export interface OrderPayload {
-  customer_details: CustomerDetailsPayload;
-  items: OrderItemPayload[];
-  total_amount: number;
-  shipping_method: 'standard' | 'express';
-  payment_method: 'cod' | 'credit_card_mock';
-  notes?: string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'; // Example statuses
+export interface OrderItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  price: number; // Price per unit at the time of purchase
 }
 
 /**
- * @interface OrderResponse
- * @description Defines the expected structure of the response after submitting an order.
+ * Represents a customer's order as retrieved from the backend.
+ * Corresponds to backend's OrderBase.
  */
-export interface OrderResponse {
-  success: boolean;
-  message: string;
-  order_id: string; // Unique identifier for the created order
-  // Optionally, you can include the full order details as well
-  // order_details?: OrderPayload & { created_at: string; updated_at: string };
-} 
+export interface Order {
+  id: string;
+  orderNumber: string;
+  userId: string;
+  orderDate: string; // Typically ISO string from backend
+  totalAmount: number;
+  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | string; // Allow string for future statuses
+  items: OrderItem[];
+}
+
+// Response from creating an order is the newly created Order itself
+export type OrderCreationResponse = Order;

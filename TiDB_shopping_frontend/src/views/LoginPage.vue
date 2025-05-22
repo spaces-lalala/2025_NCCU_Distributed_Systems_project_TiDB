@@ -67,7 +67,7 @@ const submitForm = async () => {
         console.log('登入成功 API 回應 (模擬):', response);
 
         if (response.token && response.user) {
-          authStore.login(response.token, response.user);
+          authStore.setAuthState(response);
           ElMessage.success(response.message || '登入成功！');
 
           const redirectPath = route.query.redirect as string || '/';
