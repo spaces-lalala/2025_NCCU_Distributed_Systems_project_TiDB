@@ -1,6 +1,8 @@
 <template>
   <router-link :to="`/product/${product.id}`" class="product-card-link">
     <el-card :body-style="{ padding: '0px' }" class="product-card" shadow="hover">
+    <!-- SLOT: 放入排名徽章等額外內容 -->
+      <slot />
       <img :src="product.imageUrl || defaultImage" class="product-image" @error="onImageError" />
       <div style="padding: 14px">
         <h3 class="product-name">{{ product.name }}</h3>
@@ -65,6 +67,7 @@ const addToCartHandler = () => {
   max-width: 300px;
   margin-bottom: 20px;
   transition: transform 0.2s ease-in-out;
+  position: relative;
 }
 
 .product-card:hover {

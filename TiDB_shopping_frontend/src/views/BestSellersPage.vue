@@ -17,11 +17,15 @@
 
         <div v-else-if="bestSellers.length > 0" class="products-grid">
           <product-card 
-            v-for="product in bestSellers" 
+            v-for="(product, index) in bestSellers" 
             :key="product.id" 
             :product="product"
-          />
-        </div>
+          >
+          <template #default>
+            <div class="rank-badge">第 {{ index + 1 }} 名</div>
+          </template>
+        </product-card>
+      </div>
 
         <div v-else class="no-products-section">
           <el-empty description="目前暫無熱銷商品數據，敬請期待！"></el-empty>
@@ -82,7 +86,9 @@ const fetchBestSellers = async () => {
       bestSellerMap[id].description = `已售出 ${bestSellerMap[id].totalSold} 件`;
     }
 
-    bestSellers.value = Object.values(bestSellerMap);
+    bestSellers.value = Object.values(bestSellerMap).sort(
+      (a, b) => b.totalSold - a.totalSold
+    );
   } catch (err: any) {
     console.error('Error fetching best sellers:', err);
     if (axios.isAxiosError(err) && err.response?.data?.message) {
@@ -137,4 +143,19 @@ onMounted(() => {
 }
 
 /* Add styles for ProductCard if it doesn't have its own encapsulating styles for grid display */
+
+.rank-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: #f56c6c;
+  color: white;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.9em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
 </style> 
