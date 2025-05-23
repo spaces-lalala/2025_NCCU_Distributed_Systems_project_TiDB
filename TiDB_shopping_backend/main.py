@@ -4,6 +4,10 @@ from typing import List, Optional
 import uuid # For generating a mock user ID
 import time # For generating a mock token (very basic)
 from datetime import datetime # For order date
+from database import engine
+from models import Base
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
