@@ -1,16 +1,24 @@
 from sqlalchemy import create_engine, text
+from dotenv import load_dotenv
+import os
 
-# 資料庫連線字串
-db_url = "mysql+pymysql://root@127.0.0.1:4000/shopping_db"
+# 載入 .env 的環境變數
+load_dotenv()
 
-# 建立資料庫引擎
-engine = create_engine(db_url)
+# 取得 DATABASE_URL（來自 .env）
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise ValueError("❌ DATABASE_URL 環境變數不存在，請確認 .env 檔案是否設定正確。")
 
 try:
-    with engine.connect() as conn:
-        result = conn.execute(text("SHOW TABLES"))
-        print("✅ 成功連接資料庫，以下是目前的資料表：")
-        for row in result:
-            print("-", row[0])
+    # 建立資料庫連線
+    engine = create_engine(DATABASE_URL, echo=True)
+
+    # 開始連線測試
+    with engine.connect() as connection:
+        result = connection.execute(text("SELECT NOW();"))
+        print("✅ 成功連線到 TiDB！目前時間：", result.scalar())
+
 except Exception as e:
-    print("❌ 連接失敗：", e)
+    print("❌ 連線失敗：", e)
