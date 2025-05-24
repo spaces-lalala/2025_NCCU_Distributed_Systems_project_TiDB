@@ -5,3 +5,6 @@ email-validator
 SQLAlchemy
 PyMySQL
 python-dotenv
+#for testing
+pytest
+httpx

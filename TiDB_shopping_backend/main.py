@@ -4,7 +4,7 @@ from typing import List, Optional
 import uuid # For generating a mock user ID
 import time # For generating a mock token (very basic)
 from datetime import datetime # For order date
-from database import engine
+from database import engine, SessionLocal
 from models import Base
 
 Base.metadata.create_all(bind=engine)
@@ -26,11 +26,32 @@ class UserResponse(BaseModel):
     id: str
     name: str
     email: EmailStr
+class LoginResponse(BaseModel):
+    message: str = "登入成功！"
+    access_token: str  
+    token_type: str
+    user: UserResponse
 
 class AuthSuccessResponse(BaseModel):
     message: str = "註冊成功！"
     token: str
     user: UserResponse
+
+class UserCreate(BaseModel):
+    name: str  # 將 username 改為 name
+    email: EmailStr
+    password: str
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    email: EmailStr
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserOut
+    message: str
 
 # --- Order Models (matching frontend TypeScript interfaces) ---
 class OrderItemBase(BaseModel):
@@ -102,6 +123,30 @@ async def get_current_user_id(authorization: Optional[str] = Header(None)) -> st
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+# 添加缺失的 ProductOut 和 OrderOut 類別
+
+class ProductOut(BaseModel):
+    id: int
+    name: str
+    price: float
+    image_url: Optional[str]
+
+class OrderOut(BaseModel):
+    id: int
+    user_id: int
+    total_amount: float
+    status: str
+
+# 添加缺失的 get_db 函數
+from sqlalchemy.orm import Session
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 # --- Mock API Endpoints ---
 
 @app.post("/api/auth/register", response_model=AuthSuccessResponse, status_code=status.HTTP_201_CREATED)
@@ -129,48 +174,69 @@ async def mock_register_user(registration_data: UserRegistrationRequest):
     print(f"模擬後端：回傳成功回應: {response_data.model_dump()}")
     return response_data
 
-@app.post("/api/auth/login", response_model=AuthSuccessResponse, status_code=status.HTTP_200_OK)
+@app.post("/api/auth/login", response_model=LoginResponse, status_code=status.HTTP_200_OK)
 async def mock_login_user(login_data: UserLoginRequest):
     """
     Mocks a user login endpoint.
-    In a real app, you would validate credentials against a database.
-    Here, we'll just mock a successful login if email and password are provided
-    and generate a token similar to registration.
     """
     print(f"模擬後端：收到登入請求，資料: {login_data.model_dump()}")
 
-    # Extremely simplified mock validation:
     if not login_data.email or not login_data.password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email and password are required."
         )
 
-    # In a real scenario, you'd look up the user by email and verify the password.
-    # For this mock, we'll generate a new mock_user_id based on email for simplicity
-    # or retrieve a stored one if you have a mock user store.
-    # To keep it consistent with how get_current_user_id might expect a user ID,
-    # let's create a user_id from the email.
-    mock_user_id = f"user_{login_data.email.split('@')[0]}" # Simplified user ID
-
+    mock_user_id = f"user_{login_data.email.split('@')[0]}"
     mock_token = f"mocktoken_{int(time.time())}_{mock_user_id}"
 
-    # Mock user details (in real app, fetch from DB)
-    # We don't have the user's name from the login request, so we'll use a placeholder or part of the email.
     mock_user = UserResponse(
         id=mock_user_id,
-        name=login_data.email.split('@')[0].capitalize(), # Use part of email as name
+        name=login_data.email.split('@')[0].capitalize(),
         email=login_data.email
     )
 
-    response_data = AuthSuccessResponse(
-        message="登入成功！", # Changed message
-        token=mock_token,
-        user=mock_user
-    )
-    
-    print(f"模擬後端：登入成功，回傳回應: {response_data.model_dump()}")
+    response_data = {
+        "message": "登入成功！",
+        "access_token": mock_token,  # 修改字段名稱
+        "token_type": "bearer",
+        "user": mock_user
+    }
+
+    print(f"模擬後端：登入成功，回傳回應: {response_data}")
     return response_data
+
+@app.post("/api/auth/logout")
+def logout():
+    """
+    Mocks a user logout endpoint.
+    """
+    # 使用者登出邏輯 (可選，主要由前端清除 token)
+    return {"message": "User logged out successfully"}
+
+@app.get("/api/auth/me", response_model=UserResponse)
+def get_current_user(current_user_id: str = Depends(get_current_user_id)):
+    """
+    模擬取得當前登入使用者資訊的 API。
+    根據 token 中的 user_id（格式如 'user_username'）來組合 mock user 資訊。
+    """
+    print(f"模擬後端：使用者 {current_user_id} 請求當前登入資訊...")
+
+    try:
+        # user_id 格式為 'user_username'
+        username = current_user_id.split('_', 1)[1]
+    except IndexError:
+        raise HTTPException(status_code=400, detail="Invalid user ID format.")
+
+    mock_user = UserResponse(
+        id=current_user_id,
+        name=username.capitalize(),  # 將 username 首字母大寫
+        email=f"{username}@example.com"
+    )
+
+    print(f"模擬後端：回傳當前使用者資訊: {mock_user.model_dump()}")
+    return mock_user
+
 
 @app.get("/api/orders", response_model=List[OrderBase]) # Frontend expects a list of orders directly
 async def mock_get_orders_for_user(current_user_id: str = Depends(get_current_user_id)):
@@ -248,6 +314,77 @@ async def mock_create_order(order_data: OrderCreationRequest, current_user_id: s
     print(f"模擬後端：為使用者 {current_user_id} 建立新訂單，回傳回應: {new_order.model_dump()}")
     return new_order
 
+@app.get("/api/products/{product_id}", response_model=ProductOut)
+def get_product_detail(product_id: int, db=Depends(get_db)):
+    """
+    Mocks an endpoint to get product details by product ID.
+    """
+    print(f"模擬後端：請求商品詳情，商品ID: {product_id}")
+
+    # In a real app, you would fetch the product from the database.
+    # Here, we'll just mock a product detail response.
+    mock_product = ProductOut(
+        id=product_id,
+        name="Mock Product " + str(product_id),
+        description="This is a mock product description.",
+        price=19.99,
+        stock=100,
+        category="Mock Category",
+        image_url="https://via.placeholder.com/150"
+    )
+
+    print(f"模擬後端：回傳商品詳情: {mock_product.model_dump()}")
+    return mock_product
+
+@app.get("/api/products/bestsellers", response_model=List[ProductOut])
+def get_bestsellers(limit: int = 5, db=Depends(get_db)):
+    """
+    Mocks an endpoint to get best-selling products.
+    """
+    print(f"模擬後端：請求熱銷商品，限制數量: {limit}")
+
+    # In a real app, you would query the database for best-selling products.
+    # Here, we'll just mock a list of best-selling products.
+    mock_bestsellers = [
+        ProductOut(
+            id=i,
+            name="Best Seller Product " + str(i),
+            description="This is a best seller product description.",
+            price=29.99 + i,
+            stock=50 - i * 5,
+            category="Best Seller Category",
+            image_url="https://via.placeholder.com/150"
+        ) for i in range(1, limit + 1)
+    ]
+
+    print(f"模擬後端：回傳熱銷商品列表，數量: {len(mock_bestsellers)}")
+    return mock_bestsellers
+
+@app.get("/api/orders/{order_id}", response_model=OrderOut)
+def get_order_detail(order_id: int, db=Depends(get_db)):
+    """
+    Mocks an endpoint to get order details by order ID.
+    """
+    print(f"模擬後端：請求訂單詳情，訂單ID: {order_id}")
+
+    # In a real app, you would fetch the order from the database.
+    # Here, we'll just mock an order detail response.
+    mock_order = OrderOut(
+        id=order_id,
+        orderNumber="ORD-2023-00001",
+        orderDate="2023-10-26T10:00:00Z",
+        totalAmount=74.99,
+        status="DELIVERED",
+        items=[
+            OrderItemBase(productId="prod_mock_001", productName="TiDB 官方限量版 T-Shirt", quantity=1, price=25.00),
+            OrderItemBase(productId="prod_mock_002", productName="高效能HTAP資料庫實戰手冊", quantity=1, price=49.99),
+        ],
+        userId="user_user" # Mock user ID
+    )
+
+    print(f"模擬後端：回傳訂單詳情: {mock_order.model_dump()}")
+    return mock_order
+
 # --- Optional: Root endpoint for testing if the server is up ---
 @app.get("/")
 async def read_root():
@@ -257,4 +394,4 @@ if __name__ == "__main__":
     import uvicorn
     # It's better to run uvicorn from the command line for more options
     # uvicorn.run(app, host="0.0.0.0", port=8000)
-    print("請從終端機執行: uvicorn TiDB_shopping_backend.main:app --reload --port 8000") 
+    print("請從終端機執行: uvicorn TiDB_shopping_backend.main:app --reload --port 8000")
