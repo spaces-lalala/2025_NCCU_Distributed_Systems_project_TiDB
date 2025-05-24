@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, status, Depends, Header
 from pydantic import BaseModel, EmailStr
-from typing import List, Optional
+from typing import List, Optional, Dict
 import uuid # For generating a mock user ID
 import time # For generating a mock token (very basic)
 from datetime import datetime # For order date
@@ -53,6 +53,14 @@ class Token(BaseModel):
     user: UserOut
     message: str
 
+class UserProfile(BaseModel):
+    id: str
+    username: str
+    email: EmailStr
+    created_at: datetime
+
+class UserProfileUpdate(BaseModel):
+    username: Optional[str] = None
 # --- Order Models (matching frontend TypeScript interfaces) ---
 class OrderItemBase(BaseModel):
     productId: str
@@ -156,21 +164,28 @@ async def mock_register_user(registration_data: UserRegistrationRequest):
     """
     print(f"模擬後端：收到註冊請求，資料: {registration_data.model_dump()}")
 
-    mock_user_id = str(uuid.uuid4()) # Generate a unique ID for the user
-    # Ensure the token contains this mock_user_id in a parseable way for get_current_user_id
-    mock_token = f"mocktoken_{int(time.time())}_{mock_user_id}" 
+    mock_user_id = str(uuid.uuid4())  # Generate a unique ID for the user
+    mock_token = f"mocktoken_{int(time.time())}_{mock_user_id}"
 
     mock_user = UserResponse(
-        id=mock_user_id, # UserResponse ID must match the ID in the token
+        id=mock_user_id,
         name=registration_data.name,
         email=registration_data.email
+    )
+
+    # **修正：將使用者資料存入 mock_user_db**
+    mock_user_db[mock_user_id] = UserProfile(
+        id=mock_user_id,
+        username=registration_data.name,
+        email=registration_data.email,
+        created_at=datetime.now()
     )
 
     response_data = AuthSuccessResponse(
         token=mock_token,
         user=mock_user
     )
-    
+
     print(f"模擬後端：回傳成功回應: {response_data.model_dump()}")
     return response_data
 
@@ -214,6 +229,8 @@ def logout():
     # 使用者登出邏輯 (可選，主要由前端清除 token)
     return {"message": "User logged out successfully"}
 
+mock_user_db: Dict[str, "UserProfile"] = {}  # 用 user_id 當 key 儲存 mock 使用者
+# --------- /api/auth/me ----------
 @app.get("/api/auth/me", response_model=UserResponse)
 def get_current_user(current_user_id: str = Depends(get_current_user_id)):
     """
@@ -223,19 +240,47 @@ def get_current_user(current_user_id: str = Depends(get_current_user_id)):
     print(f"模擬後端：使用者 {current_user_id} 請求當前登入資訊...")
 
     try:
-        # user_id 格式為 'user_username'
         username = current_user_id.split('_', 1)[1]
     except IndexError:
         raise HTTPException(status_code=400, detail="Invalid user ID format.")
 
+    # 建立 mock 使用者
     mock_user = UserResponse(
         id=current_user_id,
-        name=username.capitalize(),  # 將 username 首字母大寫
+        name=username.capitalize(),
         email=f"{username}@example.com"
     )
 
     print(f"模擬後端：回傳當前使用者資訊: {mock_user.model_dump()}")
     return mock_user
+
+# --------- GET /me/profile ----------
+@app.get("/me/profile", response_model=UserProfile)
+def get_user_profile(current_user_id: str = Depends(get_current_user_id)):
+    print(f"模擬後端：使用者 {current_user_id} 請求 profile...")
+
+    user = mock_user_db.get(current_user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="使用者資料不存在")
+
+    return user
+
+# --------- PUT /me/profile ----------
+@app.put("/me/profile", response_model=UserProfile)
+def update_user_profile(
+    update: UserProfileUpdate,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    print(f"模擬後端：使用者 {current_user_id} 請求更新 profile: {update.model_dump()}")
+    user = mock_user_db.get(current_user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="使用者資料不存在")
+
+    if update.username:
+        user.username = update.username
+
+    return user
+
 
 
 @app.get("/api/orders", response_model=List[OrderBase]) # Frontend expects a list of orders directly

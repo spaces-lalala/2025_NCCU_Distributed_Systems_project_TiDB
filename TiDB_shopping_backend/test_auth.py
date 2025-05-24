@@ -67,3 +67,22 @@ def test_logout_user():
     response = client.post("/api/auth/logout")
     assert response.status_code == 200
     assert response.json()["message"] == "User logged out successfully"
+
+def test_update_user_profile():
+    register_resp = client.post("/api/auth/register", json={
+        "name": "updateuser",
+        "email": "update@example.com",
+        "password": "password123"
+    })
+    assert register_resp.status_code == 201
+    token = register_resp.json()["token"]
+
+    headers = {"Authorization": f"Bearer {token}"}
+    update_resp = client.put("/me/profile", headers=headers, json={  # <-- 修正這裡
+        "username": "updateduser"
+    })
+
+    assert update_resp.status_code == 200
+    updated_profile = update_resp.json()
+    assert updated_profile["username"] == "updateduser"
+    assert updated_profile["email"] == "update@example.com"
