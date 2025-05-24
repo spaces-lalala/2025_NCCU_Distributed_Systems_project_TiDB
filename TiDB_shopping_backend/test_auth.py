@@ -140,3 +140,110 @@ def test_get_bestsellers_limit():
     data = response.json()
     assert len(data) == 2
     assert data[0]["sold"] >= data[1]["sold"]
+
+#----------test orders -----------------#
+def get_auth_token():
+    # 註冊並登入使用者以獲得 token
+    email = "orderuser@example.com"
+    password = "password123"
+    client.post("/api/auth/register", json={
+        "name": "OrderUser",
+        "email": email,
+        "password": password
+    })
+    login_resp = client.post("/api/auth/login", json={"email": email, "password": password})
+    return login_resp.json()["access_token"]
+
+def test_create_order_success():
+    token = get_auth_token()
+
+    order_payload = {
+        "items": [
+            {"product_id": 1, "quantity": 2},  # 庫存 100，2 是足夠的
+            {"product_id": 3, "quantity": 1},  # 庫存 30
+        ],
+        "shipping_address": {
+            "address": "台北市信義區",
+            "city": "台北市",
+            "postal_code": "110",
+            "country": "台灣"
+        },
+        "payment_method": "credit_card"
+    }
+
+    response = client.post(
+        "/api/orders/",
+        json=order_payload,
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert "id" in data
+    assert "total_amount" in data
+    assert len(data["items"]) == 2
+
+def test_create_order_insufficient_stock():
+    token = get_auth_token()
+
+    order_payload = {
+        "items": [
+            {"product_id": 2, "quantity": 1000},  # 庫存只有 50，不足
+        ],
+        "shipping_address": {
+            "address": "台北市信義區",
+            "city": "台北市",
+            "postal_code": "110",
+            "country": "台灣"
+        },
+        "payment_method": "credit_card"
+    }
+
+    response = client.post(
+        "/api/orders/",
+        json=order_payload,
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == 400
+    data = response.json()
+    assert "detail" in data
+    assert data["detail"] == "Insufficient stock"
+
+def test_get_order_history():
+    token = get_auth_token()
+
+    response = client.get(
+        "/api/orders/",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+
+def test_get_order_detail_success():
+    token = get_auth_token()
+    order_id = 1  # 假設這筆訂單存在且屬於該用戶
+
+    response = client.get(
+        f"/api/orders/{order_id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "id" in data and data["id"] == order_id
+    assert "items" in data
+    assert isinstance(data["items"], list)
+
+def test_get_order_detail_unauthorized():
+    token = "testtoken"
+    order_id = 9999  # 假設不存在或不屬於該用戶
+
+    response = client.get(
+        f"/api/orders/{order_id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code in (401, 403, 404)

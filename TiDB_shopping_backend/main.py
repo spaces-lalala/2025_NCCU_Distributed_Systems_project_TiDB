@@ -62,28 +62,39 @@ class UserProfile(BaseModel):
 class UserProfileUpdate(BaseModel):
     username: Optional[str] = None
 # --- Order Models (matching frontend TypeScript interfaces) ---
-class OrderItemBase(BaseModel):
-    productId: str
-    productName: str
+class OrderItemCreate(BaseModel):
+    product_id: int
     quantity: int
+
+class ShippingAddressModel(BaseModel):
+    address: str
+    city: str
+    postal_code: str
+    country: str
+
+class OrderItemOut(BaseModel):
+    product_id: int
+    name: str
     price: float
+    quantity: int
 
-class OrderBase(BaseModel):
-    id: str
-    orderNumber: str
-    orderDate: str # ISO date string preferred
-    totalAmount: float
-    status: str # e.g., 'PENDING', 'DELIVERED'
-    items: List[OrderItemBase]
-    userId: str # Add this to associate order with user
+class OrderOut(BaseModel):
+    id: int
+    user_id: str
+    total_amount: float
+    status: str
+    created_at: datetime
+    items: List[OrderItemOut]
 
-# This will store all orders created during the session for mock purposes
-mock_all_users_orders: List[OrderBase] = []
-
-class OrderCreationRequest(BaseModel): # Add this model for creating new orders
-    items: List[OrderItemBase]
-    totalAmount: float
-    # Potentially other fields like shippingAddress, paymentMethod could be added
+class OrderSummaryOut(BaseModel):
+    id: int
+    total_amount: float
+    status: str
+    created_at: datetime
+    item_count: int
+# -------------------- In-Memory Mock Storage --------------------
+mock_orders = []
+order_id_seq = 1
 
 # Optional: If API were to return { "orders": [...] }
 # class OrdersResponse(BaseModel):
@@ -143,7 +154,7 @@ class ProductOut(BaseModel):
     price: float
     image_url: Optional[str] = None
     sold: Optional[int]
-
+    
 class ProductDetailOut(ProductOut):
     description: Optional[str] = None
     stock: int
@@ -339,81 +350,84 @@ def get_product_detail(product_id: int = Path(..., ge=1)):
     return product_detail
 
 
-@app.get("/api/orders", response_model=List[OrderBase]) # Frontend expects a list of orders directly
-async def mock_get_orders_for_user(current_user_id: str = Depends(get_current_user_id)):
-    """
-    Mocks an endpoint to get orders for the authenticated user.
-    Now it filters orders from the global mock_all_users_orders list.
-    """
-    print(f"模擬後端：使用者 {current_user_id} 請求歷史訂單...")
+@app.get("/api/orders/", response_model=List[OrderSummaryOut]) # Frontend expects a list of orders directly
+def get_user_orders(
+    skip: int = 0,
+    limit: int = 10,
+    status: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    orders = [o for o in mock_orders if o["user_id"] == current_user.id]
+    if status:
+        orders = [o for o in orders if o["status"] == status]
 
-    # Filter orders from the global list for the current user
-    print(f"模擬後端 DEBUG: mock_get_orders_for_user - 當前 mock_all_users_orders (顯示訂單ID和用戶ID): {[(o.id, o.userId) for o in mock_all_users_orders]}") # DEBUG
-    user_orders = [order for order in mock_all_users_orders if order.userId == current_user_id]
-    print(f"模擬後端 DEBUG: mock_get_orders_for_user - 為使用者 {current_user_id} 篩選到的訂單 (顯示訂單ID): {[o.id for o in user_orders]}") # DEBUG
+    summaries = [
+        {
+            "id": o["id"],
+            "total_amount": o["total_amount"],
+            "status": o["status"],
+            "created_at": o["created_at"],
+            "item_count": sum(item["quantity"] for item in o["items"])
+        }
+        for o in orders[skip: skip + limit]
+    ]
+    return summaries
 
-    # BEGIN: Optional - Add initial mock orders if this is a specific demo user and they have no orders yet
-    # This ensures that our main demo user always has some initial orders to show upon first login in a session.
-    # These initial orders will also be added to mock_all_users_orders for this user.
-    if current_user_id == "user_user" and not user_orders: # Assuming 'user_user' is the ID for 'user@example.com'
-        print(f"模擬後端：為主要測試使用者 {current_user_id} 首次初始化模擬訂單...")
-        initial_demo_orders = [
-            OrderBase(
-                id="order_mock_001_user_" + current_user_id[:4],
-                orderNumber="ORD-2023-00001",
-                orderDate="2023-10-26T10:00:00Z",
-                totalAmount=74.99,
-                status="DELIVERED",
-                items=[
-                    OrderItemBase(productId="prod_mock_001", productName="TiDB 官方限量版 T-Shirt", quantity=1, price=25.00),
-                    OrderItemBase(productId="prod_mock_002", productName="高效能HTAP資料庫實戰手冊", quantity=1, price=49.99),
-                ],
-                userId=current_user_id
-            ),
-            OrderBase(
-                id="order_mock_002_user_" + current_user_id[:4],
-                orderNumber="ORD-2023-00005",
-                orderDate="2023-11-15T14:30:00Z",
-                totalAmount=15.00,
-                status="SHIPPED",
-                items=[
-                    OrderItemBase(productId="prod_mock_004", productName="PingCAP 定製鍵帽組", quantity=1, price=15.00),
-                ],
-                userId=current_user_id
-            )
-        ]
-        mock_all_users_orders.extend(initial_demo_orders) # Add to global list
-        user_orders.extend(initial_demo_orders) # Also add to current response
-    # END: Optional initial mock orders section
+@app.get("/api/orders/{order_id}", response_model=OrderOut)
+def get_order_detail(
+    order_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    order = next((o for o in mock_orders if o["id"] == order_id), None)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order["user_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Permission denied")
+    return order
 
-    print(f"模擬後端：為使用者 {current_user_id} 回傳 {len(user_orders)} 筆訂單。")
-    return user_orders
+@app.post("/api/orders/", response_model=OrderOut, status_code=201)
+def create_order(
+    order_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    global order_id_seq
+    items = order_data["items"]
+    shipping = order_data["shipping_address"]
+    payment_method = order_data["payment_method"]
 
-@app.post("/api/orders", response_model=OrderBase, status_code=status.HTTP_201_CREATED)
-async def mock_create_order(order_data: OrderCreationRequest, current_user_id: str = Depends(get_current_user_id)):
-    """
-    Mocks an endpoint to create a new order.
-    """
-    print(f"模擬後端：使用者 {current_user_id} 請求建立新訂單，資料: {order_data.model_dump()}")
+    order_items = []
+    total = 0
 
-    # In a real scenario, you'd validate the order data and create a new order in the database.
-    # For this mock, we'll create a new order with a unique ID and the provided items.
-    new_order = OrderBase(
-        id=f"order_mock_{datetime.now().strftime('%Y%m%d%H%M%S')}_user_{current_user_id[:4]}",
-        orderNumber=f"ORD-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
-        orderDate=datetime.now().isoformat(),
-        totalAmount=order_data.totalAmount,
-        status="PENDING",
-        items=order_data.items,
-        userId=current_user_id
-    )
-    print(f"模擬後端 DEBUG: mock_create_order - 新建訂單物件: {new_order.model_dump()}") # DEBUG
-    mock_all_users_orders.append(new_order)
-    print(f"模擬後端 DEBUG: mock_create_order - mock_all_users_orders 目前長度: {len(mock_all_users_orders)}") # DEBUG
-    print(f"模擬後端 DEBUG: mock_create_order - mock_all_users_orders 最後一筆訂單的用戶ID: {mock_all_users_orders[-1].userId if mock_all_users_orders else 'N/A'}") # DEBUG
-    
-    print(f"模擬後端：為使用者 {current_user_id} 建立新訂單，回傳回應: {new_order.model_dump()}")
-    return new_order
+    for item in items:
+        product = next((p for p in mock_products if p["id"] == item["product_id"]), None)
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        if product["stock"] < item["quantity"]:
+            raise HTTPException(status_code=400, detail="Insufficient stock")
+
+        product["stock"] -= item["quantity"]
+        total += product["price"] * item["quantity"]
+        order_items.append({
+            "product_id": product["id"],
+            "name": product["name"],
+            "price": product["price"],
+            "quantity": item["quantity"]
+        })
+
+    order = {
+        "id": order_id_seq,
+        "user_id": current_user.id,
+        "total_amount": total,
+        "status": "paid",
+        "created_at": datetime.now(),
+        "items": order_items,
+        "shipping": shipping,
+        "payment_method": payment_method
+    }
+    order_id_seq += 1
+    mock_orders.append(order)
+
+    return order
 
 @app.get("/api/products/{product_id}", response_model=ProductOut)
 def get_product_detail(product_id: int, db=Depends(get_db)):
