@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status, Depends, Header
+from fastapi import FastAPI, HTTPException, status, Depends, Header,APIRouter,Path
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional, Dict
 import uuid # For generating a mock user ID
@@ -133,18 +133,24 @@ async def get_current_user_id(authorization: Optional[str] = Header(None)) -> st
 
 # 添加缺失的 ProductOut 和 OrderOut 類別
 
+class CategoryOut(BaseModel):
+    id: int
+    name: str
+
 class ProductOut(BaseModel):
     id: int
     name: str
     price: float
-    image_url: Optional[str]
+    image_url: Optional[str] = None
+    sold: Optional[int]
 
-class OrderOut(BaseModel):
-    id: int
-    user_id: int
-    total_amount: float
-    status: str
+class ProductDetailOut(ProductOut):
+    description: Optional[str] = None
+    stock: int
+    category: Optional[CategoryOut] = None
 
+class ErrorDetail(BaseModel):
+    detail: str
 # 添加缺失的 get_db 函數
 from sqlalchemy.orm import Session
 
@@ -282,6 +288,56 @@ def update_user_profile(
     return user
 
 
+# --------- Products Router  ----------
+from products import mock_categories, mock_products
+@app.get("/api/products", response_model=List[ProductOut])
+def get_products(
+    skip: int = 0,
+    limit: int = 10,
+    category: Optional[str] = None,
+    sort_by: Optional[str] = None
+):
+    products = mock_products.copy()
+
+    # 篩選分類
+    if category:
+        cat = next((c for c in mock_categories if c["name"] == category), None)
+        if cat:
+            products = [p for p in products if p["category_id"] == cat["id"]]
+        else:
+            products = []
+
+    # 排序
+    if sort_by == "price_asc":
+        products.sort(key=lambda x: x["price"])
+    elif sort_by == "price_desc":
+        products.sort(key=lambda x: -x["price"])
+    elif sort_by == "name_asc":
+        products.sort(key=lambda x: x["name"])
+
+    # 分頁
+    paginated = products[skip: skip + limit]
+
+    return paginated
+
+@app.get("/api/products/bestsellers", response_model=List[ProductOut])
+def get_bestsellers(limit: int = 5):
+    top_products = sorted(mock_products, key=lambda x: -x["sold"])[:limit]
+    return top_products
+
+@app.get("/api/products/{product_id}", response_model=ProductDetailOut, responses={404: {"model": ErrorDetail}})
+def get_product_detail(product_id: int = Path(..., ge=1)):
+    product = next((p for p in mock_products if p["id"] == product_id), None)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    category = next((c for c in mock_categories if c["id"] == product["category_id"]), None)
+    product_detail = {
+        **product,
+        "category": category
+    }
+    return product_detail
+
 
 @app.get("/api/orders", response_model=List[OrderBase]) # Frontend expects a list of orders directly
 async def mock_get_orders_for_user(current_user_id: str = Depends(get_current_user_id)):
@@ -405,30 +461,30 @@ def get_bestsellers(limit: int = 5, db=Depends(get_db)):
     print(f"模擬後端：回傳熱銷商品列表，數量: {len(mock_bestsellers)}")
     return mock_bestsellers
 
-@app.get("/api/orders/{order_id}", response_model=OrderOut)
-def get_order_detail(order_id: int, db=Depends(get_db)):
-    """
-    Mocks an endpoint to get order details by order ID.
-    """
-    print(f"模擬後端：請求訂單詳情，訂單ID: {order_id}")
+# @app.get("/api/orders/{order_id}", response_model=OrderOut)
+# def get_order_detail(order_id: int, db=Depends(get_db)):
+#     """
+#     Mocks an endpoint to get order details by order ID.
+#     """
+#     print(f"模擬後端：請求訂單詳情，訂單ID: {order_id}")
 
-    # In a real app, you would fetch the order from the database.
-    # Here, we'll just mock an order detail response.
-    mock_order = OrderOut(
-        id=order_id,
-        orderNumber="ORD-2023-00001",
-        orderDate="2023-10-26T10:00:00Z",
-        totalAmount=74.99,
-        status="DELIVERED",
-        items=[
-            OrderItemBase(productId="prod_mock_001", productName="TiDB 官方限量版 T-Shirt", quantity=1, price=25.00),
-            OrderItemBase(productId="prod_mock_002", productName="高效能HTAP資料庫實戰手冊", quantity=1, price=49.99),
-        ],
-        userId="user_user" # Mock user ID
-    )
+#     # In a real app, you would fetch the order from the database.
+#     # Here, we'll just mock an order detail response.
+#     mock_order = OrderOut(
+#         id=order_id,
+#         orderNumber="ORD-2023-00001",
+#         orderDate="2023-10-26T10:00:00Z",
+#         totalAmount=74.99,
+#         status="DELIVERED",
+#         items=[
+#             OrderItemBase(productId="prod_mock_001", productName="TiDB 官方限量版 T-Shirt", quantity=1, price=25.00),
+#             OrderItemBase(productId="prod_mock_002", productName="高效能HTAP資料庫實戰手冊", quantity=1, price=49.99),
+#         ],
+#         userId="user_user" # Mock user ID
+#     )
 
-    print(f"模擬後端：回傳訂單詳情: {mock_order.model_dump()}")
-    return mock_order
+#     print(f"模擬後端：回傳訂單詳情: {mock_order.model_dump()}")
+#     return mock_order
 
 # --- Optional: Root endpoint for testing if the server is up ---
 @app.get("/")
