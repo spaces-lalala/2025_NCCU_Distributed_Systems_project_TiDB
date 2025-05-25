@@ -17,7 +17,7 @@
 
         <div v-else-if="bestSellers.length > 0" class="products-grid">
           <product-card 
-            v-for="(product, index) in bestSellers" 
+            v-for="(product, index) in bestSellers.slice(0, 3)" 
             :key="product.id" 
             :product="product"
           >
@@ -74,7 +74,7 @@ const fetchBestSellers = async () => {
           id,
           name: item.productName,
           price: item.price ?? 0,
-          imageUrl: item.imageUrl ?? '', // 如果你沒有 imageUrl，可以自己用 Map 模擬
+          imageUrl: item.image ??'', // 如果你沒有 imageUrl，可以自己用 Map 模擬
           description: '',
           totalSold: item.totalSold ?? 0,
         };
@@ -128,10 +128,11 @@ onMounted(() => {
 }
 
 .products-grid {
-  display: grid;
+  display: flex;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
   justify-content: center;
+  flex-wrap: nowrap;
 }
 
 .loading-section,

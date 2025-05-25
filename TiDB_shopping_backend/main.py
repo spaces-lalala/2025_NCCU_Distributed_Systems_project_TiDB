@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, status, Depends, Header
+from fastapi import APIRouter
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 import uuid # For generating a mock user ID
@@ -61,6 +62,8 @@ class BestSellerProduct(BaseModel):
     productId: str
     productName: str
     totalSold: int
+    price: float
+    image: str
 
 # --- Mock Authentication ---
 async def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
@@ -250,20 +253,42 @@ async def mock_create_order(order_data: OrderCreationRequest, current_user_id: s
     print(f"模擬後端：為使用者 {current_user_id} 建立新訂單，回傳回應: {new_order.model_dump()}")
     return new_order
 
+mock_product_catalog = {
+    "prod_mock_001": {"productName": "TiDB 官方限量版 T-Shirt", "price": 25.00, "image": "@/assets/images/tidb-shirt.png"},
+    "prod_mock_002": {"productName": "高效能HTAP資料庫實戰手冊", "price": 49.99, "image": "@/assets/images/HTAP.png"},
+    "prod_mock_003": {"productName": "TiDB 雲服務體驗券 (1個月)", "price": 0.00, "image": "@/assets/images/cloud.png"},
+    "prod_mock_004": {"productName": "PingCAP 定製鍵帽組", "price": 15.00, "image": "@/assets/images/pingcap.png"},
+    "prod_mock_005": {"productName": "TiDB牌純棉被", "price": 400.00, "image": "@/assets/images/tidbquilt.png"},
+}
+
 @app.get("/api/products/bestsellers", response_model=List[BestSellerProduct])
-async def get_bestsellers():
-    sales = {}
+async def mock_get_best_sellers():
+    """
+    從所有訂單中統計出最熱銷的商品。
+    """
+    print("模擬後端：統計熱銷商品中...")
+
+    # 統計每個商品的銷量
+    sales_counter: dict[str, dict] = {}  # { productId: { name, totalSold, price, image } }
+
     for order in mock_all_users_orders:
         for item in order.items:
-            key = item.productId
-            if key not in sales:
-                sales[key] = {"productName": item.productName, "totalSold": 0}
-            sales[key]["totalSold"] += item.quantity
-    sorted_sales = sorted([
-        BestSellerProduct(productId=pid, productName=info["productName"], totalSold=info["totalSold"])
-        for pid, info in sales.items()
-    ], key=lambda x: x.totalSold, reverse=True)
-    return sorted_sales
+            pid = item.productId
+            if pid not in sales_counter:
+                product_info = mock_product_catalog.get(pid, {})
+                sales_counter[pid] = {
+                    "productId": pid,
+                    "productName": item.productName,
+                    "totalSold": 0,
+                    "price": product_info.get("price", item.price),
+                    "image": product_info.get("image", ""),
+                }
+            sales_counter[pid]["totalSold"] += item.quantity
+
+    sorted_products = sorted(sales_counter.values(), key=lambda x: x["totalSold"], reverse=True)
+
+    print(f"模擬後端：共統計出 {len(sorted_products)} 項商品")
+    return sorted_products
 
 
 # --- Optional: Root endpoint for testing if the server is up ---
