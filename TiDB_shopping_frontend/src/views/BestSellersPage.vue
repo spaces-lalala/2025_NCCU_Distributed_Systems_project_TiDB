@@ -41,6 +41,11 @@ import axios from 'axios';
 import ProductCard from '@/components/product/ProductCard.vue'; // Corrected path
 import type { Product } from '@/types/product'; // Assuming a global product type definition
 import { ElContainer, ElMain, ElAlert, ElEmpty, ElSkeleton } from 'element-plus';
+import tidbShirtImg from '@/assets/images/tidb-shirt.png';
+import htapimg from '@/assets/images/HTAP.png';
+import cloudimg from '@/assets/images/cloud.png';
+import pingcapimg from '@/assets/images/pingcap.png';
+import tidbquiltimg from '@/assets/images/tidbquilt.png';
 
 // If @/types/product.ts doesn't exist or is different, define Product here or create the file
 // For example:
@@ -66,7 +71,7 @@ const fetchBestSellers = async () => {
 
     // 用來儲存價格與圖片等資訊
     for (const item of response.data) {
-      const id = item.productId;
+      const id = Number(item.productId);
 
       if (!bestSellerMap[id]) {
         // 模擬從 mock 資料取得價格與圖片（這邊假設每個 item 都有 price 和 imageUrl）
@@ -74,7 +79,18 @@ const fetchBestSellers = async () => {
           id,
           name: item.productName,
           price: item.price ?? 0,
-          imageUrl: item.image ??'', // 如果你沒有 imageUrl，可以自己用 Map 模擬
+          imageUrl: 
+            id === 1
+              ? tidbShirtImg
+              : id === 2
+              ? htapimg
+              : id === 3
+              ? cloudimg
+              : id === 4
+              ? pingcapimg
+              : id === 5
+              ? tidbquiltimg
+              : '',
           description: '',
           totalSold: item.totalSold ?? 0,
         };
