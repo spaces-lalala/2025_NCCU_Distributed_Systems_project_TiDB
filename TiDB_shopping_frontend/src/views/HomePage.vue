@@ -7,7 +7,9 @@
         <div class="hero-content">
           <h2>探索最新商品</h2>
           <p>發現為您精心挑選的優質產品</p>
+          <router-link to="/products">
           <el-button type="primary" size="large">立即選購</el-button>
+          </router-link>
         </div>
       </el-col>
     </el-row>
@@ -18,14 +20,16 @@
         <h3 class="section-title">熱門推薦</h3>
         <el-row :gutter="20">
           <!-- Loop for 3 Product Cards -->
-          <el-col :xs="24" :sm="12" :md="8" v-for="n in 3" :key="n" style="margin-bottom: 20px;">
+          <el-col :xs="24" :sm="12" :md="8" v-for="product in mockProducts.slice(0, 3)" :key="product.id" style="margin-bottom: 20px;">
             <!-- Placeholder for ProductCard component -->
             <el-card shadow="hover">
-              <img src="https://via.placeholder.com/300x200?text=Product+Image" class="product-image" alt="商品圖片">
-              <h4>商品名稱 {{ n }}</h4>
-              <p>精簡的商品描述，吸引注意力。</p>
-              <div class="product-price">NT$ {{ 100 * n }}</div>
+              <img :src="product.imageUrl" class="product-image" :alt="product.name" />
+              <h4>{{ product.name }}</h4>
+              <p>{{ product.description }}</p>
+              <div class="product-price">NT$ {{ product.price.toFixed(2) }}</div>
+              <router-link :to="`/product/${product.id}`">
               <el-button type="primary" plain>查看詳情</el-button>
+              </router-link>
             </el-card>
           </el-col>
         </el-row>
@@ -48,8 +52,21 @@
 
 <script lang="ts" setup>
 import { useRouter } from 'vue-router';
+import tidbShirtImg from '@/assets/images/tidb-shirt.png';
+import htapimg from '@/assets/images/HTAP.png';
+import cloudimg from '@/assets/images/cloud.png';
+import pingcapimg from '@/assets/images/pingcap.png';
+import tidbquiltimg from '@/assets/images/tidbquilt.png';
 
 const router = useRouter();
+
+const mockProducts: Product[] = [
+    { id: '1', name: 'TiDB 官方限量版 T-Shirt', description: '舒適純棉，印有 TiDB Logo，開發者必備信仰充值潮服。', price: 25.00, stock: 100, imageUrl: tidbShirtImg, category: '服裝' },
+    { id: '2', name: '高效能HTAP資料庫實戰手冊', description: '深入淺出 TiDB 架構與應用，從入門到精通，解鎖數據潛能。', price: 49.99, stock: 50, imageUrl: htapimg, category: '書籍' },
+    { id: '3', name: 'TiDB 雲服務體驗券 (1個月)', description: '免費體驗 TiDB Cloud Developer Tier 一個月，輕鬆部署與管理您的 TiDB 叢集。', price: 0.00, stock: 200, imageUrl: cloudimg, category: '服務' },
+    { id: '4', name: 'PingCAP 定製鍵帽組', description: '機械鍵盤愛好者福音，PingCAP 特色設計，為您的鍵盤增添個性。', price: 15.00, stock: 75, imageUrl: pingcapimg, category: '配件' },
+    { id: '5', name: 'TiDB牌純棉被', description: '讓你蓋上之後，連作夢都在想TiDB該如何使用。', price: 400.00, stock: 50, imageUrl: tidbquiltimg, category: '家具' },
+  ];
 
 // Dummy data for products, replace with API call later
 // interface Product {

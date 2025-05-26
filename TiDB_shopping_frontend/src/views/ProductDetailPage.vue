@@ -33,6 +33,11 @@ import { useRoute, useRouter } from 'vue-router';
 import type { Product } from '@/types/product';
 import { useCartStore } from '@/store/cart';
 import { ElMessage } from 'element-plus';
+import tidbShirtImg from '@/assets/images/tidb-shirt.png';
+import htapimg from '@/assets/images/HTAP.png';
+import cloudimg from '@/assets/images/cloud.png';
+import pingcapimg from '@/assets/images/pingcap.png';
+import tidbquiltimg from '@/assets/images/tidbquilt.png';
 
 const route = useRoute();
 const router = useRouter(); // Optional: for navigation if needed
@@ -51,7 +56,7 @@ const mockProducts: Product[] = [
     description: '舒適純棉，印有 TiDB Logo，開發者必備信仰充值潮服。',
     price: 25.00,
     stock: 100,
-    imageUrl: 'https://via.placeholder.com/400x300.png?text=TiDB+T-Shirt',
+    imageUrl: tidbShirtImg,
     category: '服裝',
   },
   {
@@ -60,7 +65,7 @@ const mockProducts: Product[] = [
     description: '深入淺出 TiDB 架構與應用，從入門到精通，解鎖數據潛能。',
     price: 49.99,
     stock: 50,
-    imageUrl: 'https://via.placeholder.com/400x300.png?text=TiDB+Handbook',
+    imageUrl: htapimg,
     category: '書籍',
   },
   {
@@ -69,7 +74,7 @@ const mockProducts: Product[] = [
     description: '免費體驗 TiDB Cloud Developer Tier 一個月，輕鬆部署與管理您的 TiDB 叢集。',
     price: 0.00,
     stock: 200,
-    imageUrl: 'https://via.placeholder.com/400x300.png?text=TiDB+Cloud+Voucher',
+    imageUrl: cloudimg,
     category: '服務',
   },
   {
@@ -78,8 +83,17 @@ const mockProducts: Product[] = [
     description: '機械鍵盤愛好者福音，PingCAP 特色設計，為您的鍵盤增添個性。',
     price: 15.00,
     stock: 75,
-    imageUrl: 'https://via.placeholder.com/400x300.png?text=PingCAP+Keycaps',
+    imageUrl: pingcapimg,
     category: '配件',
+  },
+  {
+    id: '5',
+    name: 'TiDB牌純棉被',
+    description: '讓你蓋上之後，連作夢都在想TiDB該如何使用。',
+    price: 400.00,
+    stock: 50,
+    imageUrl: tidbquiltimg,
+    category: '家具',
   }
 ];
 
