@@ -5,7 +5,7 @@ import uuid # For generating a mock user ID
 import time # For generating a mock token (very basic)
 from datetime import datetime # For order date
 from database import engine
-from models import Base
+from TiDB_shopping_backend.models.models import Base
 from routers import orders
 
 
@@ -13,6 +13,10 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 app.include_router(orders.router)
+app.include_router(users.router)
+app.include_router(products.router)
+app.include_router(orders.router)
+app.include_router(payments.router)
 
 # --- Pydantic Models ---
 
