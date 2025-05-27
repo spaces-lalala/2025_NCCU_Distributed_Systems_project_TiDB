@@ -82,7 +82,7 @@ const mockProducts: Product[] = [
     name: 'PingCAP 定製鍵帽組',
     description: '機械鍵盤愛好者福音，PingCAP 特色設計，為您的鍵盤增添個性。',
     price: 15.00,
-    stock: 75,
+    stock: 600,
     imageUrl: pingcapimg,
     category: '配件',
   },
@@ -100,13 +100,26 @@ const mockProducts: Product[] = [
 const fetchProductDetails = async () => {
   isLoading.value = true;
   const productId = route.params.id as string;
-  
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  const foundProduct = mockProducts.find(p => p.id === productId);
-  product.value = foundProduct || null;
-  isLoading.value = false;
+
+  try {
+    const response = await fetch(`/api/products/${productId}`);//後端的路徑
+    if (!response.ok) throw new Error('Fetch failed');
+
+    const data = await response.json();
+
+    // 如果庫存小於 500，加 10 元，不改變原始資料
+    const adjustedProduct = {
+      ...data,
+      price: data.stock < 500 ? data.price + 10 : data.price,
+    };
+
+    product.value = adjustedProduct;
+  } catch (error) {
+    console.error('Failed to fetch product:', error);
+    product.value = null;
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const addToCart = () => {

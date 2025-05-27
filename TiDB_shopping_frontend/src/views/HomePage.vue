@@ -81,6 +81,21 @@ const mockProducts: Product[] = [
 // onMounted(async () => {
 //   // TODO: Fetch featured products from API
 //   // For now, using placeholders
+//   try {
+//    const res = await fetch('/api/products'); // 假設這是你的後端 API 路由
+//    const data: Product[] = await res.json();
+
+//    // 加工邏輯：如果 stock < 500，價格 +10 元
+//    const processed = data.map((p) => {
+//      const newPrice = p.stock < 500 ? p.price + 10 : p.price;
+//      return { ...p, price: newPrice };
+//    });
+
+//    // 取前三個當作 featured
+//    featuredProducts.value = processed.slice(0, 3);
+//  } catch (error) {
+//    console.error('取得商品資料失敗', error);
+//  }    
 // });
 
 const goToBestSellers = () => {

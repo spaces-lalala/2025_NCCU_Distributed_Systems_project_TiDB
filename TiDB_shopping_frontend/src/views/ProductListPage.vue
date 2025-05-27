@@ -173,9 +173,32 @@ const fetchProducts = async () => {
     { id: '4', name: 'PingCAP 定製鍵帽組', description: '機械鍵盤愛好者福音，PingCAP 特色設計，為您的鍵盤增添個性。', price: 15.00, stock: 75, imageUrl: pingcapimg, category: '配件' },
     { id: '5', name: 'TiDB牌純棉被', description: '讓你蓋上之後，連作夢都在想TiDB該如何使用。', price: 400.00, stock: 50, imageUrl: tidbquiltimg, category: '家具' },
   ];
-  allProducts.value = mockProducts;
+  const adjustedProducts = mockProducts.map(p => ({
+    ...p,
+    price: p.stock < 500 ? p.price + 10 : p.price,
+  }));
+  allProducts.value = adjustedProducts;
   applyFiltersAndSort();
 };
+
+//如果後端啟用
+//const fetchProducts = async () => {
+//  try {
+//    const response = await fetch("http://localhost:8000/products"); // 注意：跨域請確保 CORS 開啟
+//    const data = await response.json();
+
+  // 加價邏輯：庫存 < 500 就 +10 元
+//    const adjustedProducts = data.map((p: Product) => ({
+//      ...p,
+//      price: p.stock < 500 ? p.price + 10 : p.price,
+//    }));
+
+//    allProducts.value = adjustedProducts;
+//    applyFiltersAndSort();
+//  } catch (error) {
+//    console.error("無法取得商品資料:", error);
+//  }
+//};
 
 // --- Filtering Logic ---
 const applyFiltersAndCloseDrawer = () => {

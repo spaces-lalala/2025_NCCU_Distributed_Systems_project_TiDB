@@ -12,6 +12,7 @@ const BestSellersPage = () => import('@/views/BestSellersPage.vue'); // Assuming
 const CheckoutPage = () => import('@/views/CheckoutPage.vue'); // Assuming CheckoutPage.vue will be created
 const OrderConfirmationPage = () => import('@/views/OrderConfirmationPage.vue'); // Assuming OrderConfirmationPage.vue will be created
 const NotFoundPage = () => import('@/views/NotFoundPage.vue'); // Assuming NotFoundPage.vue will be created
+const ManagerPage = () => import('@/views/ManagerPage.vue');
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -56,6 +57,12 @@ const routes: Array<RouteRecordRaw> = [
     name: 'MemberProfile',
     component: MemberProfilePage,
     meta: { requiresAuth: true, title: '會員中心' }, // Example: Mark routes that require authentication
+  },
+  {
+    path: '/admin',
+    name: 'Manager',
+    component: ManagerPage,
+    meta: {title:'管理者頁面'},
   },
   {
     path: '/bestsellers',
