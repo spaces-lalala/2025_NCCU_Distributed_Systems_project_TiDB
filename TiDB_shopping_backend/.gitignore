@@ -32,3 +32,4 @@ htmlcov/
 # SQLite (if used locally for testing, and not versioned)
 # *.sqlite3
 # *.db 
+*.pem

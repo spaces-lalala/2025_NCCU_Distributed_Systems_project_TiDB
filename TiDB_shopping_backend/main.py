@@ -12,6 +12,8 @@ from models import Base
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+from routes import products
+app.include_router(products.router)
 
 # --- Pydantic Models ---
 
@@ -309,55 +311,7 @@ def update_user_profile(
     return user
 
 
-# --------- Products Router  ----------
-from products import mock_categories, mock_products
-@app.get("/api/products", response_model=List[ProductOut])
-def get_products(
-    skip: int = 0,
-    limit: int = 10,
-    category: Optional[str] = None,
-    sort_by: Optional[str] = None
-):
-    products = mock_products.copy()
 
-    # 篩選分類
-    if category:
-        cat = next((c for c in mock_categories if c["name"] == category), None)
-        if cat:
-            products = [p for p in products if p["category_id"] == cat["id"]]
-        else:
-            products = []
-
-    # 排序
-    if sort_by == "price_asc":
-        products.sort(key=lambda x: x["price"])
-    elif sort_by == "price_desc":
-        products.sort(key=lambda x: -x["price"])
-    elif sort_by == "name_asc":
-        products.sort(key=lambda x: x["name"])
-
-    # 分頁
-    paginated = products[skip: skip + limit]
-
-    return paginated
-
-@app.get("/api/products/bestsellers", response_model=List[ProductOut])
-def get_bestsellers(limit: int = 5):
-    top_products = sorted(mock_products, key=lambda x: -x["sold"])[:limit]
-    return top_products
-
-@app.get("/api/products/{product_id}", response_model=ProductDetailOut, responses={404: {"model": ErrorDetail}})
-def get_product_detail(product_id: int = Path(..., ge=1)):
-    product = next((p for p in mock_products if p["id"] == product_id), None)
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-
-    category = next((c for c in mock_categories if c["id"] == product["category_id"]), None)
-    product_detail = {
-        **product,
-        "category": category
-    }
-    return product_detail
 
 
 @app.get("/api/orders/", response_model=List[OrderSummaryOut]) # Frontend expects a list of orders directly
@@ -439,51 +393,10 @@ def create_order(
 
     return order
 
-@app.get("/api/products/{product_id}", response_model=ProductOut)
-def get_product_detail(product_id: int, db=Depends(get_db)):
-    """
-    Mocks an endpoint to get product details by product ID.
-    """
-    print(f"模擬後端：請求商品詳情，商品ID: {product_id}")
 
-    # In a real app, you would fetch the product from the database.
-    # Here, we'll just mock a product detail response.
-    mock_product = ProductOut(
-        id=product_id,
-        name="Mock Product " + str(product_id),
-        description="This is a mock product description.",
-        price=19.99,
-        stock=100,
-        category="Mock Category",
-        image_url="https://via.placeholder.com/150"
-    )
 
-    print(f"模擬後端：回傳商品詳情: {mock_product.model_dump()}")
-    return mock_product
-
-@app.get("/api/products/bestsellers", response_model=List[ProductOut])
-def get_bestsellers(limit: int = 5, db=Depends(get_db)):
-    """
-    Mocks an endpoint to get best-selling products.
-    """
-    print(f"模擬後端：請求熱銷商品，限制數量: {limit}")
-
-    # In a real app, you would query the database for best-selling products.
-    # Here, we'll just mock a list of best-selling products.
-    mock_bestsellers = [
-        ProductOut(
-            id=i,
-            name="Best Seller Product " + str(i),
-            description="This is a best seller product description.",
-            price=29.99 + i,
-            stock=50 - i * 5,
-            category="Best Seller Category",
-            image_url="https://via.placeholder.com/150"
-        ) for i in range(1, limit + 1)
-    ]
-
-    print(f"模擬後端：回傳熱銷商品列表，數量: {len(mock_bestsellers)}")
-    return mock_bestsellers
+#     print(f"模擬後端：回傳熱銷商品列表，數量: {len(mock_bestsellers)}")
+#     return mock_bestsellers
 
 # @app.get("/api/orders/{order_id}", response_model=OrderOut)
 # def get_order_detail(order_id: int, db=Depends(get_db)):
@@ -518,34 +431,6 @@ mock_product_catalog = {
     "prod_mock_005": {"productName": "TiDB牌純棉被", "price": 400.00, "image": "@/assets/images/tidbquilt.png"},
 }
 
-@app.get("/api/products/bestsellers", response_model=List[BestSellerProduct])
-async def mock_get_best_sellers():
-    """
-    從所有訂單中統計出最熱銷的商品。
-    """
-    print("模擬後端：統計熱銷商品中...")
-
-    # 統計每個商品的銷量
-    sales_counter: dict[str, dict] = {}  # { productId: { name, totalSold, price, image } }
-
-    for order in mock_all_users_orders:
-        for item in order.items:
-            pid = item.productId
-            if pid not in sales_counter:
-                product_info = mock_product_catalog.get(pid, {})
-                sales_counter[pid] = {
-                    "productId": pid,
-                    "productName": item.productName,
-                    "totalSold": 0,
-                    "price": product_info.get("price", item.price),
-                    "image": product_info.get("image", ""),
-                }
-            sales_counter[pid]["totalSold"] += item.quantity
-
-    sorted_products = sorted(sales_counter.values(), key=lambda x: x["totalSold"], reverse=True)
-
-    print(f"模擬後端：共統計出 {len(sorted_products)} 項商品")
-    return sorted_products
 
 
 # --- Optional: Root endpoint for testing if the server is up ---
