@@ -7,7 +7,7 @@ import uuid # For generating a mock user ID
 import time # For generating a mock token (very basic)
 from datetime import datetime # For order date
 from database import engine, SessionLocal, get_db
-from models import Base, User
+from models import Base, User, Product, Category
 from sqlalchemy.orm import Session
 from utils import hash_password
 import uuid
@@ -293,48 +293,49 @@ def get_products(
     skip: int = 0,
     limit: int = 10,
     category: Optional[str] = None,
-    sort_by: Optional[str] = None
+    sort_by: Optional[str] = None,
+    db: Session = Depends(get_db)
 ):
-    products = mock_products.copy()
+    # products = mock_products.copy()
+    query = db.query(Product)
 
     # 篩選分類
     if category:
-        cat = next((c for c in mock_categories if c["name"] == category), None)
+        cat = db.query(Category).filter(Category.name == category).first()
         if cat:
-            products = [p for p in products if p["category_id"] == cat["id"]]
+            query = query.filter(Product.category_id == cat.id)
         else:
-            products = []
+            return []
 
     # 排序
     if sort_by == "price_asc":
-        products.sort(key=lambda x: x["price"])
+        query = query.order_by(Product.price.asc())
     elif sort_by == "price_desc":
-        products.sort(key=lambda x: -x["price"])
+        query = query.order_by(Product.price.desc())
     elif sort_by == "name_asc":
-        products.sort(key=lambda x: x["name"])
+        query = query.order_by(Product.name.asc())
 
-    # 分頁
-    paginated = products[skip: skip + limit]
-
-    return paginated
+    products = query.offset(skip).limit(limit).all()
+    return products
 
 @app.get("/api/products/bestsellers", response_model=List[ProductOut])
-def get_bestsellers(limit: int = 5):
-    top_products = sorted(mock_products, key=lambda x: -x["sold"])[:limit]
-    return top_products
+def get_bestsellers(limit: int = 5, db: Session = Depends(get_db)):
+    products = (
+        db.query(Product)
+        .order_by(Product.sold.desc())
+        .limit(limit)
+        .all()
+    )
+    return products
+
+
 
 @app.get("/api/products/{product_id}", response_model=ProductDetailOut, responses={404: {"model": ErrorDetail}})
-def get_product_detail(product_id: int = Path(..., ge=1)):
-    product = next((p for p in mock_products if p["id"] == product_id), None)
+def get_product_detail(product_id: int, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-
-    category = next((c for c in mock_categories if c["id"] == product["category_id"]), None)
-    product_detail = {
-        **product,
-        "category": category
-    }
-    return product_detail
+    return product
 
 
 @app.get("/api/orders/", response_model=List[OrderSummaryOut]) # Frontend expects a list of orders directly
@@ -416,27 +417,7 @@ def create_order(
 
     return order
 
-# @app.get("/api/products/{product_id}", response_model=ProductOut)
-# def get_product_detail(product_id: int, db=Depends(get_db)):
-#     """
-#     Mocks an endpoint to get product details by product ID.
-#     """
-#     print(f"模擬後端：請求商品詳情，商品ID: {product_id}")
 
-#     # In a real app, you would fetch the product from the database.
-#     # Here, we'll just mock a product detail response.
-#     mock_product = ProductOut(
-#         id=product_id,
-#         name="Mock Product " + str(product_id),
-#         description="This is a mock product description.",
-#         price=19.99,
-#         stock=100,
-#         category="Mock Category",
-#         image_url="https://via.placeholder.com/150"
-#     )
-
-#     print(f"模擬後端：回傳商品詳情: {mock_product.model_dump()}")
-#     return mock_product
 
 @app.get("/api/products/bestsellers", response_model=List[ProductOut])
 def get_bestsellers(limit: int = 5, db=Depends(get_db)):
