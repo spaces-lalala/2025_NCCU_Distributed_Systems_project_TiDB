@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.orm import Session
 from database import get_db
-from TiDB_shopping_backend.models.models import Order, OrderItem, Product
+from TiDB_shopping_backend.models.order import Order, OrderItem, Product
 from schemas import OrderBase, OrderCreationRequest, OrderItemBase
 from dependencies import get_current_user_id
 import uuid

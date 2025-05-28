@@ -10,3 +10,4 @@ class Product(Base):
     price = Column(Float, nullable=False)
     stock = Column(Integer, default=0)
     reserved_stock = Column(Integer, default=0) 
+    category = Column(String(255))
