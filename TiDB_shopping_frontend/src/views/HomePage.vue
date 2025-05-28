@@ -83,18 +83,26 @@ const mockProducts: Product[] = [
 //   // For now, using placeholders
 //   try {
 //    const res = await fetch('/api/products'); // 假設這是你的後端 API 路由
-//    const data: Product[] = await res.json();
+//    const stockData: { id: string; stock: number }[] = await res.json();
 
-//    // 加工邏輯：如果 stock < 500，價格 +10 元
-//    const processed = data.map((p) => {
-//      const newPrice = p.stock < 500 ? p.price + 10 : p.price;
-//      return { ...p, price: newPrice };
+//    // 將 stock merge 到 mockProducts，並調整價格
+//    const merged = mockProducts.map((mock) => {
+//      const stockInfo = stockData.find(item => item.id === mock.id);
+//      const updatedStock = stockInfo ? stockInfo.stock : mock.stock;
+//      const adjustedPrice = updatedStock < 500 ? mock.price + 10 : mock.price;
+
+//      return {
+//        ...mock,
+//        stock: updatedStock,
+//        price: adjustedPrice
+//      };
 //    });
 
-//    // 取前三個當作 featured
-//    featuredProducts.value = processed.slice(0, 3);
+//    featuredProducts.value = merged.slice(0, 3);
 //  } catch (error) {
-//    console.error('取得商品資料失敗', error);
+//    console.error('取得庫存資料失敗', error);
+//    // fallback：使用 mockProducts 原本資料
+//    featuredProducts.value = mockProducts.slice(0, 3);
 //  }    
 // });
 

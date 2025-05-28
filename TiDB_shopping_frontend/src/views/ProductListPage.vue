@@ -184,19 +184,23 @@ const fetchProducts = async () => {
 //如果後端啟用
 //const fetchProducts = async () => {
 //  try {
-//    const response = await fetch("http://localhost:8000/products"); // 注意：跨域請確保 CORS 開啟
-//    const data = await response.json();
+//    const response = await fetch("http://localhost:8000/products"); 
+//    const stockData: { id: string; stock: number }[] = await response.json();
 
-  // 加價邏輯：庫存 < 500 就 +10 元
-//    const adjustedProducts = data.map((p: Product) => ({
-//      ...p,
-//      price: p.stock < 500 ? p.price + 10 : p.price,
-//    }));
+//  // 合併 stock 到 mockProducts
+//    const updatedProducts = mockProducts.map(p => {
+//      const backendStock = stockData.find(s => s.id === p.id)?.stock ?? p.stock;
+//      return {
+//        ...p,
+//        stock: backendStock,
+//        price: backendStock < 500 ? p.price + 10 : p.price
+//      };
+//    });
 
-//    allProducts.value = adjustedProducts;
+//    allProducts.value = updatedProducts;
 //    applyFiltersAndSort();
 //  } catch (error) {
-//    console.error("無法取得商品資料:", error);
+//    console.error("無法取得庫存資料:", error);
 //  }
 //};
 

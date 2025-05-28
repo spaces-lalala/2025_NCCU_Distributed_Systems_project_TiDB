@@ -1,32 +1,39 @@
 <template>
   <div class="p-6">
-    <h2 class="text-xl font-bold mb-4">產品銷售排行榜</h2>
+    <!-- 圓餅圖 -->
+    <h2 class="text-xl font-bold mb-4">產品銷售佔比</h2>
+    <div ref="chartRef" style="width: 100%; height: 400px;" class="mb-12" />
 
-    <!-- 表格 -->
-    <el-table :data="salesReport" stripe class="mb-8">
-      <el-table-column prop="product_name" label="產品名稱" />
-      <el-table-column prop="total_sold" label="總銷售數量" />
+    <!-- 購買記錄表格 -->
+    <h2 class="text-xl font-bold mb-4">購買記錄</h2>
+    <el-table :data="purchaseLog" stripe>
+      <el-table-column prop="time" label="購買時間" width="180" />
+      <el-table-column label="購買商品">
+        <template #default="{ row }">
+          <ul>
+            <li v-for="(item, index) in row.products" :key="index">
+              {{ item.product_name }} × {{ item.quantity }}
+            </li>
+          </ul>
+        </template>
+      </el-table-column>
     </el-table>
-
-    <!-- 圓餅圖容器 -->
-    <div ref="chartRef" style="width: 100%; height: 400px;" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import * as echarts from 'echarts'
 
 const salesReport = ref([])
+const purchaseLog = ref([])
 const chartRef = ref(null)
 let chartInstance = null
 
-// 初始化圖表
+// 渲染圓餅圖
 const renderChart = () => {
-  if (!chartRef.value) return
-
-  const total = salesReport.value.reduce((sum, item) => sum + item.total_sold, 0)
+  if (!chartRef.value || salesReport.value.length === 0) return
 
   const pieData = salesReport.value.map(item => ({
     name: item.product_name,
@@ -70,19 +77,30 @@ const renderChart = () => {
 
 onMounted(async () => {
   try {
-    const res = await axios.get('/api/admin/sales_report', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-    salesReport.value = res.data
-  } catch (err) {
-    console.error('無法載入報表', err)
-  }
-})
+    const token = localStorage.getItem('token')
 
-// 當資料更新後重新渲染圖表
-watch(salesReport, () => {
-  renderChart()
+    // 同時取得兩份資料
+    const [salesRes, logRes] = await Promise.all([
+      axios.get('/api/admin/sales_report', {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      axios.get('/api/admin/purchase_log', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ])
+
+    salesReport.value = salesRes.data
+    renderChart()
+
+    purchaseLog.value = logRes.data
+      .sort((a, b) => new Date(b.time) - new Date(a.time)) // 時間新到舊
+      .slice(0, 5) // 只取最新 5 筆
+      .map(entry => ({
+        ...entry,
+        time: new Date(entry.time).toLocaleString()
+      }))
+  } catch (err) {
+    console.error('載入報表失敗', err)
+  }
 })
 </script>

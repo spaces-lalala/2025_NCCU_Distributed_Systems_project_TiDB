@@ -105,17 +105,20 @@ const fetchProductDetails = async () => {
     const response = await fetch(`/api/products/${productId}`);//後端的路徑
     if (!response.ok) throw new Error('Fetch failed');
 
-    const data = await response.json();
+    const stockData = await res.json();
 
-    // 如果庫存小於 500，加 10 元，不改變原始資料
-    const adjustedProduct = {
-      ...data,
-      price: data.stock < 500 ? data.price + 10 : data.price,
+    const mock = mockProducts.find(p => p.id === productId);
+    if (!mock) throw new Error('找不到 mock 商品');
+
+    const finalProduct = {
+      ...mock,
+      stock: stockData.stock,
+      price: stockData.stock < 500 ? mock.price + 10 : mock.price
     };
 
-    product.value = adjustedProduct;
+    product.value = finalProduct;
   } catch (error) {
-    console.error('Failed to fetch product:', error);
+    console.error('商品讀取失敗：', error);
     product.value = null;
   } finally {
     isLoading.value = false;
