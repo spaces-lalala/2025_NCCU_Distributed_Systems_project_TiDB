@@ -73,10 +73,12 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
 
   const responseData = await response.json(); // Always try to parse JSON
 
+
   if (!response.ok) {
     // Access detail from responseData, which should now be parsed
     throw new Error(responseData.detail || '登入失敗');
   }
+
   return responseData as AuthResponse; // Return parsed data
 };
 

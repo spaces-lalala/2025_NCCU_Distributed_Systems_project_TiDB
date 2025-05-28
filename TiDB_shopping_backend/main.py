@@ -6,8 +6,17 @@ from typing import List, Optional, Dict
 import uuid # For generating a mock user ID
 import time # For generating a mock token (very basic)
 from datetime import datetime # For order date
-from database import engine, SessionLocal
-from models import Base
+from database import engine, SessionLocal, get_db
+from models import Base, User
+from sqlalchemy.orm import Session
+from utils import hash_password
+import uuid
+from utils import verify_password, hash_password
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+from fastapi.security import OAuth2PasswordBearer
+from typing import Optional
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -94,63 +103,39 @@ class OrderSummaryOut(BaseModel):
     status: str
     created_at: datetime
     item_count: int
-# -------------------- In-Memory Mock Storage --------------------
-mock_orders = []
-order_id_seq = 1
+# -------------------- JWT-based Authentication --------------------
 
-# Optional: If API were to return { "orders": [...] }
-# class OrdersResponse(BaseModel):
-#     orders: List[OrderBase]
+# Secret key for signing JWTs
+SECRET_KEY = "your-secret-key"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-# --- Bestseller Models ---
-class BestSellerProduct(BaseModel):
-    productId: str
-    productName: str
-    totalSold: int
-    price: float
-    image: str
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
-# --- Mock Authentication ---
-async def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
-    if not authorization:
-        print("模擬後端：缺少 Authorization header")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated (missing token)",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    parts = authorization.split()
-    if parts[0].lower() != "bearer" or len(parts) != 2:
-        print(f"模擬後端：Authorization header 格式錯誤: {authorization}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token format",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    token = parts[1]
-    print(f"模擬後端：收到的 Token: {token}")
-    
-    # Very basic mock token parsing: assumes token is "mocktoken_timestamp_userid"
+def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None):
+    to_encode = {"sub": user_id}
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> str:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
     try:
-        token_parts = token.split('_')
-        if len(token_parts) < 3: # Must have at least mocktoken, timestamp, and one part for user_id
-            raise ValueError("Token format too short or not a mock token")
-        
-        # The user_id is everything after the first two parts ("mocktoken" and timestamp)
-        mock_user_id_from_token = "_".join(token_parts[2:])
-        
-        if not mock_user_id_from_token: # Basic check
-             raise ValueError("Token user ID part is empty")
-        print(f"模擬後端：從 Token 中模擬解析到的 User ID: {mock_user_id_from_token}")
-        return mock_user_id_from_token 
-    except Exception as e:
-        print(f"模擬後端：無法從 Token 中解析 User ID: {e} (Token: {token})")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token - cannot parse user id",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+        return user_id
+    except JWTError:
+        raise credentials_exception
 
 # 添加缺失的 ProductOut 和 OrderOut 類別
 
@@ -185,68 +170,67 @@ def get_db():
 # --- Mock API Endpoints ---
 
 @app.post("/api/auth/register", response_model=AuthSuccessResponse, status_code=status.HTTP_201_CREATED)
-async def mock_register_user(registration_data: UserRegistrationRequest):
-    """
-    Mocks a user registration endpoint.
-    """
-    print(f"模擬後端：收到註冊請求，資料: {registration_data.model_dump()}")
+def register_user(
+    registration_data: UserRegistrationRequest,
+    db: Session = Depends(get_db)
+):
+    # 檢查 email 是否已註冊
+    existing_user = db.query(User).filter(User.email == registration_data.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email 已註冊")
 
-    mock_user_id = str(uuid.uuid4())  # Generate a unique ID for the user
-    mock_token = f"mocktoken_{int(time.time())}_{mock_user_id}"
+    # 雜湊密碼
+    hashed_pw = hash_password(registration_data.password)
 
-    mock_user = UserResponse(
-        id=mock_user_id,
+    # 建立新 User
+    user_id = str(uuid.uuid4())
+    new_user = User(
+        id=user_id,
         name=registration_data.name,
-        email=registration_data.email
-    )
-
-    # **修正：將使用者資料存入 mock_user_db**
-    mock_user_db[mock_user_id] = UserProfile(
-        id=mock_user_id,
-        username=registration_data.name,
         email=registration_data.email,
-        created_at=datetime.now()
+        password=hashed_pw
     )
 
-    response_data = AuthSuccessResponse(
-        token=mock_token,
-        user=mock_user
-    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
 
-    print(f"模擬後端：回傳成功回應: {response_data.model_dump()}")
-    return response_data
+    # 產生 JWT Token
+    token = create_access_token(user_id)
 
-@app.post("/api/auth/login", response_model=LoginResponse, status_code=status.HTTP_200_OK)
-async def mock_login_user(login_data: UserLoginRequest):
-    """
-    Mocks a user login endpoint.
-    """
-    print(f"模擬後端：收到登入請求，資料: {login_data.model_dump()}")
-
-    if not login_data.email or not login_data.password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email and password are required."
+    # 回傳格式
+    return AuthSuccessResponse(
+        message= "註冊成功！",
+        token=token,
+        user=UserResponse(
+            id=user_id,
+            name=new_user.name,
+            email=new_user.email
         )
-
-    mock_user_id = f"user_{login_data.email.split('@')[0]}"
-    mock_token = f"mocktoken_{int(time.time())}_{mock_user_id}"
-
-    mock_user = UserResponse(
-        id=mock_user_id,
-        name=login_data.email.split('@')[0].capitalize(),
-        email=login_data.email
     )
 
-    response_data = {
-        "message": "登入成功！",
-        "access_token": mock_token,  # 修改字段名稱
-        "token_type": "bearer",
-        "user": mock_user
-    }
+@app.post("/api/auth/login", response_model=AuthSuccessResponse, status_code=status.HTTP_200_OK)
+def login_user(login_data: UserLoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == login_data.email).first()
 
-    print(f"模擬後端：登入成功，回傳回應: {response_data}")
-    return response_data
+    if not user:
+        raise HTTPException(status_code=401, detail="帳號不存在")
+
+    if not verify_password(login_data.password, user.password):
+        raise HTTPException(status_code=401, detail="密碼錯誤")
+
+    token = create_access_token(user.id)
+
+    return AuthSuccessResponse(
+        message="登入成功！",
+        token=token,
+        user=UserResponse(
+            id=user.id,
+            name=user.name,
+            email=user.email
+        )
+    )
+
 
 @app.post("/api/auth/logout")
 def logout():
@@ -256,57 +240,50 @@ def logout():
     # 使用者登出邏輯 (可選，主要由前端清除 token)
     return {"message": "User logged out successfully"}
 
-mock_user_db: Dict[str, "UserProfile"] = {}  # 用 user_id 當 key 儲存 mock 使用者
 # --------- /api/auth/me ----------
 @app.get("/api/auth/me", response_model=UserResponse)
-def get_current_user(current_user_id: str = Depends(get_current_user_id)):
-    """
-    模擬取得當前登入使用者資訊的 API。
-    根據 token 中的 user_id（格式如 'user_username'）來組合 mock user 資訊。
-    """
-    print(f"模擬後端：使用者 {current_user_id} 請求當前登入資訊...")
+def get_current_user(
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    print(f"後端查詢：使用者 {current_user_id} 請求當前登入資訊...")
 
-    try:
-        username = current_user_id.split('_', 1)[1]
-    except IndexError:
-        raise HTTPException(status_code=400, detail="Invalid user ID format.")
+    user = db.query(User).filter(User.id == current_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="使用者不存在")
 
-    # 建立 mock 使用者
-    mock_user = UserResponse(
-        id=current_user_id,
-        name=username.capitalize(),
-        email=f"{username}@example.com"
+    return UserResponse(
+        id=user.id,
+        name=user.name,
+        email=user.email
     )
-
-    print(f"模擬後端：回傳當前使用者資訊: {mock_user.model_dump()}")
-    return mock_user
 
 # --------- GET /me/profile ----------
 @app.get("/me/profile", response_model=UserProfile)
-def get_user_profile(current_user_id: str = Depends(get_current_user_id)):
-    print(f"模擬後端：使用者 {current_user_id} 請求 profile...")
-
-    user = mock_user_db.get(current_user_id)
+def get_current_user(current_user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == current_user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="使用者資料不存在")
+        raise HTTPException(status_code=404, detail="使用者不存在")
 
-    return user
+    return UserResponse(id=user.id, name=user.name, email=user.email)
 
 # --------- PUT /me/profile ----------
 @app.put("/me/profile", response_model=UserProfile)
 def update_user_profile(
     update: UserProfileUpdate,
-    current_user_id: str = Depends(get_current_user_id)
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
 ):
-    print(f"模擬後端：使用者 {current_user_id} 請求更新 profile: {update.model_dump()}")
-    user = mock_user_db.get(current_user_id)
+    user = db.query(User).filter(User.id == current_user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="使用者資料不存在")
 
     if update.username:
-        user.username = update.username
+        user.name = update.username
 
-    return user
+    db.commit()
+    db.refresh(user)
+    return UserProfile(username=user.name)
 
 
 # --------- Products Router  ----------
@@ -439,27 +416,27 @@ def create_order(
 
     return order
 
-@app.get("/api/products/{product_id}", response_model=ProductOut)
-def get_product_detail(product_id: int, db=Depends(get_db)):
-    """
-    Mocks an endpoint to get product details by product ID.
-    """
-    print(f"模擬後端：請求商品詳情，商品ID: {product_id}")
+# @app.get("/api/products/{product_id}", response_model=ProductOut)
+# def get_product_detail(product_id: int, db=Depends(get_db)):
+#     """
+#     Mocks an endpoint to get product details by product ID.
+#     """
+#     print(f"模擬後端：請求商品詳情，商品ID: {product_id}")
 
-    # In a real app, you would fetch the product from the database.
-    # Here, we'll just mock a product detail response.
-    mock_product = ProductOut(
-        id=product_id,
-        name="Mock Product " + str(product_id),
-        description="This is a mock product description.",
-        price=19.99,
-        stock=100,
-        category="Mock Category",
-        image_url="https://via.placeholder.com/150"
-    )
+#     # In a real app, you would fetch the product from the database.
+#     # Here, we'll just mock a product detail response.
+#     mock_product = ProductOut(
+#         id=product_id,
+#         name="Mock Product " + str(product_id),
+#         description="This is a mock product description.",
+#         price=19.99,
+#         stock=100,
+#         category="Mock Category",
+#         image_url="https://via.placeholder.com/150"
+#     )
 
-    print(f"模擬後端：回傳商品詳情: {mock_product.model_dump()}")
-    return mock_product
+#     print(f"模擬後端：回傳商品詳情: {mock_product.model_dump()}")
+#     return mock_product
 
 @app.get("/api/products/bestsellers", response_model=List[ProductOut])
 def get_bestsellers(limit: int = 5, db=Depends(get_db)):
@@ -518,34 +495,37 @@ mock_product_catalog = {
     "prod_mock_005": {"productName": "TiDB牌純棉被", "price": 400.00, "image": "@/assets/images/tidbquilt.png"},
 }
 
-@app.get("/api/products/bestsellers", response_model=List[BestSellerProduct])
-async def mock_get_best_sellers():
-    """
-    從所有訂單中統計出最熱銷的商品。
-    """
-    print("模擬後端：統計熱銷商品中...")
 
-    # 統計每個商品的銷量
-    sales_counter: dict[str, dict] = {}  # { productId: { name, totalSold, price, image } }
+#注意這裡可能會發生錯誤所以先註解掉，後端人記得要接到這裡，這裡是熱銷排行榜
 
-    for order in mock_all_users_orders:
-        for item in order.items:
-            pid = item.productId
-            if pid not in sales_counter:
-                product_info = mock_product_catalog.get(pid, {})
-                sales_counter[pid] = {
-                    "productId": pid,
-                    "productName": item.productName,
-                    "totalSold": 0,
-                    "price": product_info.get("price", item.price),
-                    "image": product_info.get("image", ""),
-                }
-            sales_counter[pid]["totalSold"] += item.quantity
+# @app.get("/api/products/bestsellers", response_model=List[BestSellerProduct])
+# async def mock_get_best_sellers():
+#     """
+#     從所有訂單中統計出最熱銷的商品。
+#     """
+#     print("模擬後端：統計熱銷商品中...")
 
-    sorted_products = sorted(sales_counter.values(), key=lambda x: x["totalSold"], reverse=True)
+#     # 統計每個商品的銷量
+#     sales_counter: dict[str, dict] = {}  # { productId: { name, totalSold, price, image } }
 
-    print(f"模擬後端：共統計出 {len(sorted_products)} 項商品")
-    return sorted_products
+#     for order in mock_all_users_orders:
+#         for item in order.items:
+#             pid = item.productId
+#             if pid not in sales_counter:
+#                 product_info = mock_product_catalog.get(pid, {})
+#                 sales_counter[pid] = {
+#                     "productId": pid,
+#                     "productName": item.productName,
+#                     "totalSold": 0,
+#                     "price": product_info.get("price", item.price),
+#                     "image": product_info.get("image", ""),
+#                 }
+#             sales_counter[pid]["totalSold"] += item.quantity
+
+#     sorted_products = sorted(sales_counter.values(), key=lambda x: x["totalSold"], reverse=True)
+
+#     print(f"模擬後端：共統計出 {len(sorted_products)} 項商品")
+#     return sorted_products
 
 
 # --- Optional: Root endpoint for testing if the server is up ---
