@@ -41,11 +41,8 @@ import axios from 'axios';
 import ProductCard from '@/components/product/ProductCard.vue'; // Corrected path
 import type { Product } from '@/types/product'; // Assuming a global product type definition
 import { ElContainer, ElMain, ElAlert, ElEmpty, ElSkeleton } from 'element-plus';
-import tidbShirtImg from '@/assets/images/tidb-shirt.png';
-import htapimg from '@/assets/images/HTAP.png';
-import cloudimg from '@/assets/images/cloud.png';
-import pingcapimg from '@/assets/images/pingcap.png';
-import tidbquiltimg from '@/assets/images/tidbquilt.png';
+
+import { productImageMap } from '@/assets/images/ProductImageMaps';
 
 // If @/types/product.ts doesn't exist or is different, define Product here or create the file
 // For example:
@@ -57,6 +54,7 @@ import tidbquiltimg from '@/assets/images/tidbquilt.png';
 //   description?: string;
 //   // ... other properties ProductCard might expect
 // }
+
 
 const bestSellers = ref<Product[]>([]);
 const isLoading = ref(false);
@@ -73,18 +71,8 @@ const fetchBestSellers = async () => {
       id: item.id,
       name: item.name,
       price: item.price,
-      imageUrl:
-        item.id === 1
-          ? tidbShirtImg
-          : item.id === 2
-          ? htapimg
-          : item.id === 3
-          ? cloudimg
-          : item.id === 4
-          ? pingcapimg
-          : item.id === 5
-          ? tidbquiltimg
-          : '',
+      imageUrl: productImageMap[item.name] ?? item.image_url ?? '',
+
       description: `已售出 ${item.sold ?? 0} 件`,
     }));
   } catch (err: any) {

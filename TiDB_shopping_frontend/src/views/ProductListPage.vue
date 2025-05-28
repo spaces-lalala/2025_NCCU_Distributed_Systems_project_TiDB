@@ -124,11 +124,7 @@ import ProductCard from '@/components/product/ProductCard.vue';
 import type { Product } from '@/types/product';
 import { ElMessage } from 'element-plus';
 import { useMediaQuery, useCssVar } from '@vueuse/core';
-import tidbShirtImg from '@/assets/images/tidb-shirt.png';
-import htapimg from '@/assets/images/HTAP.png';
-import cloudimg from '@/assets/images/cloud.png';
-import pingcapimg from '@/assets/images/pingcap.png';
-import tidbquiltimg from '@/assets/images/tidbquilt.png';
+import { productImageMap } from '@/assets/images/ProductImageMaps';
 
 // --- Responsive ---
 const isSmallScreen = useMediaQuery('(max-width: 768px)');
@@ -162,33 +158,6 @@ const sortBy = ref<string>('default');
 const currentPage = ref<number>(1);
 const pageSize = ref<number>(12); // Changed to 12 to better suit 4 columns
 
-const productImageMap: Record<string, string> = {
-  'TiDB 官方限量版 T-Shirt': tidbShirtImg,
-  '高效能 HTAP 資料庫實戰手冊': htapimg,
-  'TiDB 雲服務體驗券 (1個月)': cloudimg,
-  'PingCAP 定製鍵帽組': pingcapimg,
-  'TiDB牌純棉被': tidbquiltimg,
-};
-
-
-// --- Mock Data Fetching ---
-// const fetchProducts = async () => {
-//   await new Promise(resolve => setTimeout(resolve, 300));
-//   const mockProducts: Product[] = [
-//     { id: '1', name: 'TiDB 官方限量版 T-Shirt', description: '舒適純棉，印有 TiDB Logo，開發者必備信仰充值潮服。', price: 25.00, stock: 100, imageUrl: tidbShirtImg, category: '服裝' },
-//     { id: '2', name: '高效能HTAP資料庫實戰手冊', description: '深入淺出 TiDB 架構與應用，從入門到精通，解鎖數據潛能。', price: 49.99, stock: 50, imageUrl: htapimg, category: '書籍' },
-//     { id: '3', name: 'TiDB 雲服務體驗券 (1個月)', description: '免費體驗 TiDB Cloud Developer Tier 一個月，輕鬆部署與管理您的 TiDB 叢集。', price: 0.00, stock: 200, imageUrl: cloudimg, category: '服務' },
-//     { id: '4', name: 'PingCAP 定製鍵帽組', description: '機械鍵盤愛好者福音，PingCAP 特色設計，為您的鍵盤增添個性。', price: 15.00, stock: 75, imageUrl: pingcapimg, category: '配件' },
-//     { id: '5', name: 'TiDB牌純棉被', description: '讓你蓋上之後，連作夢都在想TiDB該如何使用。', price: 400.00, stock: 50, imageUrl: tidbquiltimg, category: '家具' },
-//   ];
-//   const adjustedProducts = mockProducts.map(p => ({
-//     ...p,
-//     price: p.stock < 500 ? p.price + 10 : p.price,
-//   }));
-//   allProducts.value = adjustedProducts;
-//   applyFiltersAndSort();
-  
-// };
 
 // //如果後端啟用
 // const fetchProducts = async () => {
@@ -212,7 +181,7 @@ const productImageMap: Record<string, string> = {
 //    console.error("無法取得庫存資料:", error);
 //  }
 // };
-// 將您的 fetchProducts 函數修改為：
+
 const fetchProducts = async () => {
   try {
     const response = await fetch("http://localhost:8000/api/products");
@@ -221,21 +190,19 @@ const fetchProducts = async () => {
     console.log("從後端獲取的原始商品資料:", productsFromBackend); // 方便除錯
 
     const adjustedProducts: Product[] = productsFromBackend.map(p => ({
-      id: String(p.id), // 後端是數字，前端是 string，需要轉換
+      id: String(p.id), 
       name: p.name,
-      // 注意：後端資料沒有 'description' 欄位，這裡可能需要設定為空字串或從其他地方獲取
-      description: p.description || '', // 如果後端沒有，給個預設值
+      description: p.description || '',
       price: p.price,
-      stock: p.sold, // *** 將後端的 'sold' 映射到前端的 'stock' ***
+      stock: p.sold, 
       // imageUrl: p.image_url, // *** 將後端的 'image_url' 映射到前端的 'imageUrl' ***
       imageUrl: productImageMap[p.name] ?? p.image_url ?? '',
-      category: p.category_name, // *** 將後端的 'category_name' 映射到前端的 'category' ***
+      category: p.category_name, 
     }));
 
-    // 這裡的邏輯與您原先的相同，但現在 allProducts 的數據結構是正確的
     const finalProducts = adjustedProducts.map(p => ({
       ...p,
-      price: p.stock < 500 ? p.price + 10 : p.price, // 使用正確的 p.stock
+      price: p.stock < 500 ? p.price + 10 : p.price,
     }));
 
     allProducts.value = finalProducts;
