@@ -8,7 +8,7 @@ from database import get_db
 from models.product import Product
 from schemas.product import ProductOut
 
-router = APIRouter(prefix="/product", tags=["products"])
+router = APIRouter(prefix="/api/product", tags=["products"])
 
 @router.get("/", response_model=List[ProductOut])
 def list_products(
