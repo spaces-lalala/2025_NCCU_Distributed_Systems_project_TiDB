@@ -65,57 +65,36 @@ const error = ref<string | null>(null);
 const fetchBestSellers = async () => {
   isLoading.value = true;
   error.value = null;
+
   try {
     const response = await axios.get('/api/products/bestsellers');
-    const bestSellerMap: Record<string, Product & { totalSold: number }> = {};
 
-    // 用來儲存價格與圖片等資訊
-    for (const item of response.data) {
-      const id = Number(item.productId);
-
-      if (!bestSellerMap[id]) {
-        // 模擬從 mock 資料取得價格與圖片（這邊假設每個 item 都有 price 和 imageUrl）
-        bestSellerMap[id] = {
-          id,
-          name: item.productName,
-          price: item.price ?? 0,
-          imageUrl: 
-            id === 1
-              ? tidbShirtImg
-              : id === 2
-              ? htapimg
-              : id === 3
-              ? cloudimg
-              : id === 4
-              ? pingcapimg
-              : id === 5
-              ? tidbquiltimg
-              : '',
-          description: '',
-          totalSold: item.totalSold ?? 0,
-        };
-      } else {
-        bestSellerMap[id].totalSold += item.totalSold;
-      }
-
-      // 更新描述
-      bestSellerMap[id].description = `已售出 ${bestSellerMap[id].totalSold} 件`;
-    }
-
-    bestSellers.value = Object.values(bestSellerMap).sort(
-      (a, b) => b.totalSold - a.totalSold
-    );
+    bestSellers.value = response.data.map((item: any, index: number) => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      imageUrl:
+        item.id === 1
+          ? tidbShirtImg
+          : item.id === 2
+          ? htapimg
+          : item.id === 3
+          ? cloudimg
+          : item.id === 4
+          ? pingcapimg
+          : item.id === 5
+          ? tidbquiltimg
+          : '',
+      description: `已售出 ${item.sold ?? 0} 件`,
+    }));
   } catch (err: any) {
     console.error('Error fetching best sellers:', err);
-    if (axios.isAxiosError(err) && err.response?.data?.message) {
-        error.value = `無法載入熱銷商品: ${err.response.data.message}`;
-    } else {
-        error.value = '無法載入熱銷商品，請稍後再試。';
-    }
+    error.value = '無法載入熱銷商品，請稍後再試。';
   } finally {
     isLoading.value = false;
   }
 };
+
 
 onMounted(() => {
   fetchBestSellers();
