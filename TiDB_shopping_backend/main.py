@@ -6,16 +6,16 @@ import time # For generating a mock token (very basic)
 from datetime import datetime # For order date
 from database import engine
 from TiDB_shopping_backend.models.models import Base
-from api import orders, payments, product,__int_
-
+from api import orders, payments, product
+from models import order_item, order, product
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-app.include_router(orders.api)
-#app.include_router(users.api)
-app.include_router(product.api)
-app.include_router(payments.api)
+app.include_router(orders.router)
+#app.include_router(users.router)
+app.include_router(product.router)
+app.include_router(payments.router)
 
 # --- Pydantic Models ---
 
