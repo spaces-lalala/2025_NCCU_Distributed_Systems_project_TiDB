@@ -48,3 +48,27 @@ def create_order(db: Session, user_id: str, items: list):
     db.commit()
     db.refresh(new_order)
     return new_order
+
+def cancel_order(db: Session, user_id: str, order_id: str):
+    order = db.query(Order).filter(Order.id == order_id, Order.user_id == user_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.status != "PENDING":
+        raise HTTPException(status_code=400, detail="Cannot cancel a non-pending order")
+
+    # 恢復庫存
+    for item in order.items:
+        product = db.query(Product).filter(Product.id == item.product_id).first()
+        product.stock += item.quantity
+
+    order.status = "CANCELLED"
+    db.commit()
+    return order
+
+def update_order_status(db: Session, order_id: str, new_status: str):
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    order.status = new_status
+    db.commit()
+    return order

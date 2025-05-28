@@ -128,3 +128,67 @@ def get_order_detail(
         ],
         userId=order.user_id
     )
+
+@router.post("/{order_id}/cancel", response_model=OrderBase)
+def cancel_order_route(
+    order_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    from services.order_service import cancel_order
+    order = cancel_order(db, current_user_id, order_id)
+    return order
+
+@router.patch("/{order_id}/status")
+def update_order_status_route(
+    order_id: str,
+    status: str,
+    db: Session = Depends(get_db)
+):
+    from services.order_service import update_order_status
+    order = update_order_status(db, order_id, status)
+    return {"message": f"Order {order_id} updated to {status}"}
+
+
+@router.get("/status/{status}", response_model=List[OrderBase])
+def get_orders_by_status(
+    status: str,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    orders = db.query(Order).filter(Order.user_id == current_user_id, Order.status == status).all()
+    return [
+        OrderBase(
+            id=order.id,
+            orderNumber=order.order_number,
+            orderDate=order.order_date.isoformat(),
+            totalAmount=order.total_amount,
+            status=order.status,
+            items=[
+                OrderItemBase(
+                    productId=item.product_id,
+                    productName=item.product_name,
+                    quantity=item.quantity,
+                    price=item.price
+                ) for item in order.items
+            ],
+            userId=order.user_id
+        )
+        for order in orders
+    ]
+
+@router.delete("/{order_id}")
+def delete_order(
+    order_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    order = db.query(Order).filter(Order.id == order_id, Order.user_id == current_user_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.status not in ["CANCELLED", "COMPLETED"]:
+        raise HTTPException(status_code=400, detail="Can only delete cancelled or completed orders")
+    
+    db.delete(order)
+    db.commit()
+    return {"message": f"Order {order_id} deleted successfully"}
