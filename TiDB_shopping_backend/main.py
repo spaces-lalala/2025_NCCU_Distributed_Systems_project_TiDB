@@ -7,7 +7,7 @@ import uuid # For generating a mock user ID
 import time # For generating a mock token (very basic)
 from datetime import datetime # For order date
 from database import engine, SessionLocal, get_db
-from models import Base, User
+from models import Base, User, Product, Category
 from sqlalchemy.orm import Session
 from utils import hash_password
 import uuid
@@ -15,12 +15,26 @@ from utils import verify_password, hash_password
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+# ------------------------------
+# 🔧 CORS 中介層設定
+# 這段設定允許前端從不同的網域（如 http://localhost:3000）存取後端 API。
+# 開發階段設為允許所有來源（"*"），部署時請改為指定 domain 以確保安全性。
+# 官方說明：https://fastapi.tiangolo.com/tutorial/cors/
+# ------------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5002"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Pydantic Models ---
 
@@ -149,12 +163,21 @@ class ProductOut(BaseModel):
     price: float
     image_url: Optional[str] = None
     sold: Optional[int]
+    category_name: Optional[str]
     
 class ProductDetailOut(ProductOut):
-    description: Optional[str] = None
+    # description: Optional[str] = None
+    # stock: int
+    # category: Optional[CategoryOut] = None
+    id: int
+    name: str
+    price: float
+    image_url: Optional[str]
+    sold: Optional[int]
     stock: int
-    category: Optional[CategoryOut] = None
-
+    description: Optional[str]
+    category_name: Optional[str]
+    
 class ErrorDetail(BaseModel):
     detail: str
 # 添加缺失的 get_db 函數
@@ -293,48 +316,48 @@ def get_products(
     skip: int = 0,
     limit: int = 10,
     category: Optional[str] = None,
-    sort_by: Optional[str] = None
+    sort_by: Optional[str] = None,
+    db: Session = Depends(get_db)
 ):
-    products = mock_products.copy()
+    # products = mock_products.copy()
+    query = db.query(Product)
 
     # 篩選分類
     if category:
-        cat = next((c for c in mock_categories if c["name"] == category), None)
+        cat = db.query(Category).filter(Category.name == category).first()
         if cat:
-            products = [p for p in products if p["category_id"] == cat["id"]]
+            query = query.filter(Product.category_name == cat.name)
         else:
-            products = []
+            return []
 
     # 排序
     if sort_by == "price_asc":
-        products.sort(key=lambda x: x["price"])
+        query = query.order_by(Product.price.asc())
     elif sort_by == "price_desc":
-        products.sort(key=lambda x: -x["price"])
+        query = query.order_by(Product.price.desc())
     elif sort_by == "name_asc":
-        products.sort(key=lambda x: x["name"])
+        query = query.order_by(Product.name.asc())
 
-    # 分頁
-    paginated = products[skip: skip + limit]
-
-    return paginated
+    products = query.offset(skip).limit(limit).all()
+    return products
 
 @app.get("/api/products/bestsellers", response_model=List[ProductOut])
-def get_bestsellers(limit: int = 5):
-    top_products = sorted(mock_products, key=lambda x: -x["sold"])[:limit]
-    return top_products
+def get_bestsellers(limit: int = 5, db: Session = Depends(get_db)):
+    products = (
+        db.query(Product)
+        .order_by(Product.sold.desc())
+        .limit(limit)
+        .all()
+    )
+    return products
+
 
 @app.get("/api/products/{product_id}", response_model=ProductDetailOut, responses={404: {"model": ErrorDetail}})
-def get_product_detail(product_id: int = Path(..., ge=1)):
-    product = next((p for p in mock_products if p["id"] == product_id), None)
+def get_product_detail(product_id: int, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-
-    category = next((c for c in mock_categories if c["id"] == product["category_id"]), None)
-    product_detail = {
-        **product,
-        "category": category
-    }
-    return product_detail
+    return product
 
 
 @app.get("/api/orders/", response_model=List[OrderSummaryOut]) # Frontend expects a list of orders directly
@@ -416,51 +439,7 @@ def create_order(
 
     return order
 
-# @app.get("/api/products/{product_id}", response_model=ProductOut)
-# def get_product_detail(product_id: int, db=Depends(get_db)):
-#     """
-#     Mocks an endpoint to get product details by product ID.
-#     """
-#     print(f"模擬後端：請求商品詳情，商品ID: {product_id}")
 
-#     # In a real app, you would fetch the product from the database.
-#     # Here, we'll just mock a product detail response.
-#     mock_product = ProductOut(
-#         id=product_id,
-#         name="Mock Product " + str(product_id),
-#         description="This is a mock product description.",
-#         price=19.99,
-#         stock=100,
-#         category="Mock Category",
-#         image_url="https://via.placeholder.com/150"
-#     )
-
-#     print(f"模擬後端：回傳商品詳情: {mock_product.model_dump()}")
-#     return mock_product
-
-@app.get("/api/products/bestsellers", response_model=List[ProductOut])
-def get_bestsellers(limit: int = 5, db=Depends(get_db)):
-    """
-    Mocks an endpoint to get best-selling products.
-    """
-    print(f"模擬後端：請求熱銷商品，限制數量: {limit}")
-
-    # In a real app, you would query the database for best-selling products.
-    # Here, we'll just mock a list of best-selling products.
-    mock_bestsellers = [
-        ProductOut(
-            id=i,
-            name="Best Seller Product " + str(i),
-            description="This is a best seller product description.",
-            price=29.99 + i,
-            stock=50 - i * 5,
-            category="Best Seller Category",
-            image_url="https://via.placeholder.com/150"
-        ) for i in range(1, limit + 1)
-    ]
-
-    print(f"模擬後端：回傳熱銷商品列表，數量: {len(mock_bestsellers)}")
-    return mock_bestsellers
 
 # @app.get("/api/orders/{order_id}", response_model=OrderOut)
 # def get_order_detail(order_id: int, db=Depends(get_db)):
@@ -487,45 +466,7 @@ def get_bestsellers(limit: int = 5, db=Depends(get_db)):
 #     print(f"模擬後端：回傳訂單詳情: {mock_order.model_dump()}")
 #     return mock_order
 
-mock_product_catalog = {
-    "prod_mock_001": {"productName": "TiDB 官方限量版 T-Shirt", "price": 25.00, "image": "@/assets/images/tidb-shirt.png"},
-    "prod_mock_002": {"productName": "高效能HTAP資料庫實戰手冊", "price": 49.99, "image": "@/assets/images/HTAP.png"},
-    "prod_mock_003": {"productName": "TiDB 雲服務體驗券 (1個月)", "price": 0.00, "image": "@/assets/images/cloud.png"},
-    "prod_mock_004": {"productName": "PingCAP 定製鍵帽組", "price": 15.00, "image": "@/assets/images/pingcap.png"},
-    "prod_mock_005": {"productName": "TiDB牌純棉被", "price": 400.00, "image": "@/assets/images/tidbquilt.png"},
-}
 
-
-#注意這裡可能會發生錯誤所以先註解掉，後端人記得要接到這裡，這裡是熱銷排行榜
-
-# @app.get("/api/products/bestsellers", response_model=List[BestSellerProduct])
-# async def mock_get_best_sellers():
-#     """
-#     從所有訂單中統計出最熱銷的商品。
-#     """
-#     print("模擬後端：統計熱銷商品中...")
-
-#     # 統計每個商品的銷量
-#     sales_counter: dict[str, dict] = {}  # { productId: { name, totalSold, price, image } }
-
-#     for order in mock_all_users_orders:
-#         for item in order.items:
-#             pid = item.productId
-#             if pid not in sales_counter:
-#                 product_info = mock_product_catalog.get(pid, {})
-#                 sales_counter[pid] = {
-#                     "productId": pid,
-#                     "productName": item.productName,
-#                     "totalSold": 0,
-#                     "price": product_info.get("price", item.price),
-#                     "image": product_info.get("image", ""),
-#                 }
-#             sales_counter[pid]["totalSold"] += item.quantity
-
-#     sorted_products = sorted(sales_counter.values(), key=lambda x: x["totalSold"], reverse=True)
-
-#     print(f"模擬後端：共統計出 {len(sorted_products)} 項商品")
-#     return sorted_products
 
 
 # --- Optional: Root endpoint for testing if the server is up ---

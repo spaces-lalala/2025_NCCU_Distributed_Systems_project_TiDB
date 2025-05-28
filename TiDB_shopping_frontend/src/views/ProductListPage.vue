@@ -124,11 +124,7 @@ import ProductCard from '@/components/product/ProductCard.vue';
 import type { Product } from '@/types/product';
 import { ElMessage } from 'element-plus';
 import { useMediaQuery, useCssVar } from '@vueuse/core';
-import tidbShirtImg from '@/assets/images/tidb-shirt.png';
-import htapimg from '@/assets/images/HTAP.png';
-import cloudimg from '@/assets/images/cloud.png';
-import pingcapimg from '@/assets/images/pingcap.png';
-import tidbquiltimg from '@/assets/images/tidbquilt.png';
+import { productImageMap } from '@/assets/images/ProductImageMaps';
 
 // --- Responsive ---
 const isSmallScreen = useMediaQuery('(max-width: 768px)');
@@ -163,26 +159,8 @@ const currentPage = ref<number>(1);
 const pageSize = ref<number>(12); // Changed to 12 to better suit 4 columns
 
 
-// --- Mock Data Fetching ---
-const fetchProducts = async () => {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  const mockProducts: Product[] = [
-    { id: '1', name: 'TiDB 官方限量版 T-Shirt', description: '舒適純棉，印有 TiDB Logo，開發者必備信仰充值潮服。', price: 25.00, stock: 100, imageUrl: tidbShirtImg, category: '服裝' },
-    { id: '2', name: '高效能HTAP資料庫實戰手冊', description: '深入淺出 TiDB 架構與應用，從入門到精通，解鎖數據潛能。', price: 49.99, stock: 50, imageUrl: htapimg, category: '書籍' },
-    { id: '3', name: 'TiDB 雲服務體驗券 (1個月)', description: '免費體驗 TiDB Cloud Developer Tier 一個月，輕鬆部署與管理您的 TiDB 叢集。', price: 0.00, stock: 200, imageUrl: cloudimg, category: '服務' },
-    { id: '4', name: 'PingCAP 定製鍵帽組', description: '機械鍵盤愛好者福音，PingCAP 特色設計，為您的鍵盤增添個性。', price: 15.00, stock: 75, imageUrl: pingcapimg, category: '配件' },
-    { id: '5', name: 'TiDB牌純棉被', description: '讓你蓋上之後，連作夢都在想TiDB該如何使用。', price: 400.00, stock: 50, imageUrl: tidbquiltimg, category: '家具' },
-  ];
-  const adjustedProducts = mockProducts.map(p => ({
-    ...p,
-    price: p.stock < 500 ? p.price + 10 : p.price,
-  }));
-  allProducts.value = adjustedProducts;
-  applyFiltersAndSort();
-};
-
-//如果後端啟用
-//const fetchProducts = async () => {
+// //如果後端啟用
+// const fetchProducts = async () => {
 //  try {
 //    const response = await fetch("http://localhost:8000/products"); 
 //    const stockData: { id: string; stock: number }[] = await response.json();
@@ -202,7 +180,44 @@ const fetchProducts = async () => {
 //  } catch (error) {
 //    console.error("無法取得庫存資料:", error);
 //  }
-//};
+// };
+
+const fetchProducts = async () => {
+  try {
+    const response = await fetch("http://localhost:8000/api/products");
+    const productsFromBackend: any[] = await response.json(); // 先用 any[] 接收，再進行轉換
+    
+    console.log("從後端獲取的原始商品資料:", productsFromBackend); // 方便除錯
+
+    const adjustedProducts: Product[] = productsFromBackend.map(p => ({
+      id: String(p.id), 
+      name: p.name,
+      description: p.description || '',
+      price: p.price,
+      stock: p.sold, 
+      // imageUrl: p.image_url, // *** 將後端的 'image_url' 映射到前端的 'imageUrl' ***
+      imageUrl: productImageMap[p.name] ?? p.image_url ?? '',
+      category: p.category_name, 
+    }));
+
+    const finalProducts = adjustedProducts.map(p => ({
+      ...p,
+      price: p.stock < 500 ? p.price + 10 : p.price,
+    }));
+
+    allProducts.value = finalProducts;
+    console.log("處理後的 allProducts (已轉換欄位名稱):", allProducts.value); // 方便除錯
+    applyFiltersAndSort();
+  } catch (error) {
+    console.error("無法取得商品資料:", error);
+    ElMessage.error('無法加載商品資料，請稍後再試。');
+    // 清空商品列表，避免顯示舊資料
+    allProducts.value = [];
+    filteredProducts.value = [];
+    paginatedProducts.value = [];
+  }
+};
+
 
 // --- Filtering Logic ---
 const applyFiltersAndCloseDrawer = () => {
@@ -237,9 +252,11 @@ const clearFilters = () => {
 // --- Sorting and Pagination Logic ---
 const applyFiltersAndSort = () => {
   let productsToProcess = [...allProducts.value];
-
   if (selectedCategories.value.length > 0) {
-    productsToProcess = productsToProcess.filter(p => selectedCategories.value.includes(p.category));
+    productsToProcess = productsToProcess.filter(p =>
+      selectedCategories.value.includes(p.category ?? '')
+  );
+
   }
 
   productsToProcess = productsToProcess.filter(p => p.price >= priceRange.value[0] && p.price <= priceRange.value[1]);

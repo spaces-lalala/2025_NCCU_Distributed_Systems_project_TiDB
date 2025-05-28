@@ -24,3 +24,23 @@ class Order(Base):
     user_id = Column(String(64), ForeignKey("users.id"))
 
     user = relationship("User", back_populates="orders")
+
+class Category(Base):
+    __tablename__ = "categories"
+
+    name = Column(String(100), primary_key=True) 
+
+    products = relationship("Product", back_populates="category")
+
+class Product(Base):
+    __tablename__ = "products"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100))
+    price = Column(Float)
+    image_url = Column(String(255), nullable=True)
+    sold = Column(Integer, default=0)
+    stock = Column(Integer)
+    description = Column(String(1000)) 
+    category_name = Column(String(100), ForeignKey("categories.name"))
+
+    category = relationship("Category", back_populates="products")
