@@ -47,55 +47,64 @@ const quantity = ref<number>(1);
 const isLoading = ref<boolean>(true);
 const cartStore = useCartStore();
 
-// Mock product data (same as in ProductListPage for now)
-// In a real app, this would come from a shared service or store, or be fetched directly
-const mockProducts: Product[] = [
-  {
-    id: '1',
-    name: 'TiDB 官方限量版 T-Shirt',
-    description: '舒適純棉，印有 TiDB Logo，開發者必備信仰充值潮服。',
-    price: 25.00,
-    stock: 100,
-    imageUrl: tidbShirtImg,
-    category: '服裝',
-  },
-  {
-    id: '2',
-    name: '高效能HTAP資料庫實戰手冊',
-    description: '深入淺出 TiDB 架構與應用，從入門到精通，解鎖數據潛能。',
-    price: 49.99,
-    stock: 50,
-    imageUrl: htapimg,
-    category: '書籍',
-  },
-  {
-    id: '3',
-    name: 'TiDB 雲服務體驗券 (1個月)',
-    description: '免費體驗 TiDB Cloud Developer Tier 一個月，輕鬆部署與管理您的 TiDB 叢集。',
-    price: 0.00,
-    stock: 200,
-    imageUrl: cloudimg,
-    category: '服務',
-  },
-  {
-    id: '4',
-    name: 'PingCAP 定製鍵帽組',
-    description: '機械鍵盤愛好者福音，PingCAP 特色設計，為您的鍵盤增添個性。',
-    price: 15.00,
-    stock: 600,
-    imageUrl: pingcapimg,
-    category: '配件',
-  },
-  {
-    id: '5',
-    name: 'TiDB牌純棉被',
-    description: '讓你蓋上之後，連作夢都在想TiDB該如何使用。',
-    price: 400.00,
-    stock: 50,
-    imageUrl: tidbquiltimg,
-    category: '家具',
-  }
-];
+// // Mock product data (same as in ProductListPage for now)
+// // In a real app, this would come from a shared service or store, or be fetched directly
+// const mockProducts: Product[] = [
+//   {
+//     id: '1',
+//     name: 'TiDB 官方限量版 T-Shirt',
+//     description: '舒適純棉，印有 TiDB Logo，開發者必備信仰充值潮服。',
+//     price: 25.00,
+//     stock: 100,
+//     imageUrl: tidbShirtImg,
+//     category: '服裝',
+//   },
+//   {
+//     id: '2',
+//     name: '高效能HTAP資料庫實戰手冊',
+//     description: '深入淺出 TiDB 架構與應用，從入門到精通，解鎖數據潛能。',
+//     price: 49.99,
+//     stock: 50,
+//     imageUrl: htapimg,
+//     category: '書籍',
+//   },
+//   {
+//     id: '3',
+//     name: 'TiDB 雲服務體驗券 (1個月)',
+//     description: '免費體驗 TiDB Cloud Developer Tier 一個月，輕鬆部署與管理您的 TiDB 叢集。',
+//     price: 0.00,
+//     stock: 200,
+//     imageUrl: cloudimg,
+//     category: '服務',
+//   },
+//   {
+//     id: '4',
+//     name: 'PingCAP 定製鍵帽組',
+//     description: '機械鍵盤愛好者福音，PingCAP 特色設計，為您的鍵盤增添個性。',
+//     price: 15.00,
+//     stock: 600,
+//     imageUrl: pingcapimg,
+//     category: '配件',
+//   },
+//   {
+//     id: '5',
+//     name: 'TiDB牌純棉被',
+//     description: '讓你蓋上之後，連作夢都在想TiDB該如何使用。',
+//     price: 400.00,
+//     stock: 50,
+//     imageUrl: tidbquiltimg,
+//     category: '家具',
+//   }
+// ];
+
+const productImageMap: Record<string, string> = {
+  'TiDB 官方限量版 T-Shirt': tidbShirtImg,
+  '高效能 HTAP 資料庫實戰手冊': htapimg,
+  'TiDB 雲服務體驗券 (1個月)': cloudimg,
+  'PingCAP 定製鍵帽組': pingcapimg,
+  'TiDB牌純棉被': tidbquiltimg,
+};
+
 
 // const fetchProductDetails = async () => {
 //   isLoading.value = true;
@@ -138,7 +147,8 @@ const fetchProductDetails = async () => {
     // 若有需要調整圖片欄位
     product.value = {
       ...data,
-      imageUrl: data.image_url,  // 轉換圖片欄位
+      // imageUrl: data.image_url,  // 轉換圖片欄位
+      imageUrl: productImageMap[data.name] ?? data.image_url ?? '', // 優先用 map，再 fallback
     };
   } catch (error) {
     console.error('商品讀取失敗：', error);

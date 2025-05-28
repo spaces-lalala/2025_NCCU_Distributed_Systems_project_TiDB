@@ -162,6 +162,14 @@ const sortBy = ref<string>('default');
 const currentPage = ref<number>(1);
 const pageSize = ref<number>(12); // Changed to 12 to better suit 4 columns
 
+const productImageMap: Record<string, string> = {
+  'TiDB 官方限量版 T-Shirt': tidbShirtImg,
+  '高效能 HTAP 資料庫實戰手冊': htapimg,
+  'TiDB 雲服務體驗券 (1個月)': cloudimg,
+  'PingCAP 定製鍵帽組': pingcapimg,
+  'TiDB牌純棉被': tidbquiltimg,
+};
+
 
 // --- Mock Data Fetching ---
 // const fetchProducts = async () => {
@@ -219,7 +227,8 @@ const fetchProducts = async () => {
       description: p.description || '', // 如果後端沒有，給個預設值
       price: p.price,
       stock: p.sold, // *** 將後端的 'sold' 映射到前端的 'stock' ***
-      imageUrl: p.image_url, // *** 將後端的 'image_url' 映射到前端的 'imageUrl' ***
+      // imageUrl: p.image_url, // *** 將後端的 'image_url' 映射到前端的 'imageUrl' ***
+      imageUrl: productImageMap[p.name] ?? p.image_url ?? '',
       category: p.category_name, // *** 將後端的 'category_name' 映射到前端的 'category' ***
     }));
 
