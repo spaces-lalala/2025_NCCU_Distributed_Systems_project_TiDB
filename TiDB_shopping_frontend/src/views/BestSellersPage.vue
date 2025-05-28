@@ -17,11 +17,15 @@
 
         <div v-else-if="bestSellers.length > 0" class="products-grid">
           <product-card 
-            v-for="product in bestSellers" 
+            v-for="(product, index) in bestSellers.slice(0, 3)" 
             :key="product.id" 
             :product="product"
-          />
-        </div>
+          >
+          <template #default>
+            <div class="rank-badge">第 {{ index + 1 }} 名</div>
+          </template>
+        </product-card>
+      </div>
 
         <div v-else class="no-products-section">
           <el-empty description="目前暫無熱銷商品數據，敬請期待！"></el-empty>
@@ -37,6 +41,11 @@ import axios from 'axios';
 import ProductCard from '@/components/product/ProductCard.vue'; // Corrected path
 import type { Product } from '@/types/product'; // Assuming a global product type definition
 import { ElContainer, ElMain, ElAlert, ElEmpty, ElSkeleton } from 'element-plus';
+import tidbShirtImg from '@/assets/images/tidb-shirt.png';
+import htapimg from '@/assets/images/HTAP.png';
+import cloudimg from '@/assets/images/cloud.png';
+import pingcapimg from '@/assets/images/pingcap.png';
+import tidbquiltimg from '@/assets/images/tidbquilt.png';
 
 // If @/types/product.ts doesn't exist or is different, define Product here or create the file
 // For example:
@@ -57,9 +66,45 @@ const fetchBestSellers = async () => {
   isLoading.value = true;
   error.value = null;
   try {
-    // Replace with your actual API endpoint for best sellers
-    const response = await axios.get<Product[]>('/api/products/bestsellers');
-    bestSellers.value = response.data;
+    const response = await axios.get('/api/products/bestsellers');
+    const bestSellerMap: Record<string, Product & { totalSold: number }> = {};
+
+    // 用來儲存價格與圖片等資訊
+    for (const item of response.data) {
+      const id = Number(item.productId);
+
+      if (!bestSellerMap[id]) {
+        // 模擬從 mock 資料取得價格與圖片（這邊假設每個 item 都有 price 和 imageUrl）
+        bestSellerMap[id] = {
+          id,
+          name: item.productName,
+          price: item.price ?? 0,
+          imageUrl: 
+            id === 1
+              ? tidbShirtImg
+              : id === 2
+              ? htapimg
+              : id === 3
+              ? cloudimg
+              : id === 4
+              ? pingcapimg
+              : id === 5
+              ? tidbquiltimg
+              : '',
+          description: '',
+          totalSold: item.totalSold ?? 0,
+        };
+      } else {
+        bestSellerMap[id].totalSold += item.totalSold;
+      }
+
+      // 更新描述
+      bestSellerMap[id].description = `已售出 ${bestSellerMap[id].totalSold} 件`;
+    }
+
+    bestSellers.value = Object.values(bestSellerMap).sort(
+      (a, b) => b.totalSold - a.totalSold
+    );
   } catch (err: any) {
     console.error('Error fetching best sellers:', err);
     if (axios.isAxiosError(err) && err.response?.data?.message) {
@@ -99,10 +144,11 @@ onMounted(() => {
 }
 
 .products-grid {
-  display: grid;
+  display: flex;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
   justify-content: center;
+  flex-wrap: nowrap;
 }
 
 .loading-section,
@@ -114,4 +160,19 @@ onMounted(() => {
 }
 
 /* Add styles for ProductCard if it doesn't have its own encapsulating styles for grid display */
+
+.rank-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: #f56c6c;
+  color: white;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.9em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
 </style> 
