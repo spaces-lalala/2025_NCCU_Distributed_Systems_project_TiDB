@@ -173,9 +173,36 @@ const fetchProducts = async () => {
     { id: '4', name: 'PingCAP 定製鍵帽組', description: '機械鍵盤愛好者福音，PingCAP 特色設計，為您的鍵盤增添個性。', price: 15.00, stock: 75, imageUrl: pingcapimg, category: '配件' },
     { id: '5', name: 'TiDB牌純棉被', description: '讓你蓋上之後，連作夢都在想TiDB該如何使用。', price: 400.00, stock: 50, imageUrl: tidbquiltimg, category: '家具' },
   ];
-  allProducts.value = mockProducts;
+  const adjustedProducts = mockProducts.map(p => ({
+    ...p,
+    price: p.stock < 500 ? p.price + 10 : p.price,
+  }));
+  allProducts.value = adjustedProducts;
   applyFiltersAndSort();
 };
+
+//如果後端啟用
+//const fetchProducts = async () => {
+//  try {
+//    const response = await fetch("http://localhost:8000/products"); 
+//    const stockData: { id: string; stock: number }[] = await response.json();
+
+//  // 合併 stock 到 mockProducts
+//    const updatedProducts = mockProducts.map(p => {
+//      const backendStock = stockData.find(s => s.id === p.id)?.stock ?? p.stock;
+//      return {
+//        ...p,
+//        stock: backendStock,
+//        price: backendStock < 500 ? p.price + 10 : p.price
+//      };
+//    });
+
+//    allProducts.value = updatedProducts;
+//    applyFiltersAndSort();
+//  } catch (error) {
+//    console.error("無法取得庫存資料:", error);
+//  }
+//};
 
 // --- Filtering Logic ---
 const applyFiltersAndCloseDrawer = () => {
