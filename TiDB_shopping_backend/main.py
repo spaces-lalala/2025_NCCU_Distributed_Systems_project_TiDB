@@ -15,12 +15,26 @@ from utils import verify_password, hash_password
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+# ------------------------------
+# 🔧 CORS 中介層設定
+# 這段設定允許前端從不同的網域（如 http://localhost:3000）存取後端 API。
+# 開發階段設為允許所有來源（"*"），部署時請改為指定 domain 以確保安全性。
+# 官方說明：https://fastapi.tiangolo.com/tutorial/cors/
+# ------------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5002"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Pydantic Models ---
 
@@ -149,6 +163,7 @@ class ProductOut(BaseModel):
     price: float
     image_url: Optional[str] = None
     sold: Optional[int]
+    category_name: Optional[str]
     
 class ProductDetailOut(ProductOut):
     description: Optional[str] = None
@@ -303,7 +318,7 @@ def get_products(
     if category:
         cat = db.query(Category).filter(Category.name == category).first()
         if cat:
-            query = query.filter(Product.category_id == cat.id)
+            query = query.filter(Product.category_name == cat.name)
         else:
             return []
 
@@ -329,6 +344,18 @@ def get_bestsellers(limit: int = 5, db: Session = Depends(get_db)):
     return products
 
 
+# @app.get("/api/products/{product_id}", response_model=ProductDetailOut, responses={404: {"model": ErrorDetail}})
+# def get_product_detail(product_id: int = Path(..., ge=1)):
+#     product = next((p for p in mock_products if p["id"] == product_id), None)
+#     if not product:
+#         raise HTTPException(status_code=404, detail="Product not found")
+
+#     category = next((c for c in mock_categories if c["id"] == product["category_id"]), None)
+#     product_detail = {
+#         **product,
+#         "category": category
+#     }
+#     return product_detail
 
 @app.get("/api/products/{product_id}", response_model=ProductDetailOut, responses={404: {"model": ErrorDetail}})
 def get_product_detail(product_id: int, db: Session = Depends(get_db)):
@@ -417,31 +444,29 @@ def create_order(
 
     return order
 
+# @app.get("/api/products/{product_id}", response_model=ProductOut)
+# def get_product_detail(product_id: int, db=Depends(get_db)):
+#     """
+#     Mocks an endpoint to get product details by product ID.
+#     """
+#     print(f"模擬後端：請求商品詳情，商品ID: {product_id}")
+
+#     # In a real app, you would fetch the product from the database.
+#     # Here, we'll just mock a product detail response.
+#     mock_product = ProductOut(
+#         id=product_id,
+#         name="Mock Product " + str(product_id),
+#         description="This is a mock product description.",
+#         price=19.99,
+#         stock=100,
+#         category="Mock Category",
+#         image_url="https://via.placeholder.com/150"
+#     )
+
+#     print(f"模擬後端：回傳商品詳情: {mock_product.model_dump()}")
+#     return mock_product
 
 
-@app.get("/api/products/bestsellers", response_model=List[ProductOut])
-def get_bestsellers(limit: int = 5, db=Depends(get_db)):
-    """
-    Mocks an endpoint to get best-selling products.
-    """
-    print(f"模擬後端：請求熱銷商品，限制數量: {limit}")
-
-    # In a real app, you would query the database for best-selling products.
-    # Here, we'll just mock a list of best-selling products.
-    mock_bestsellers = [
-        ProductOut(
-            id=i,
-            name="Best Seller Product " + str(i),
-            description="This is a best seller product description.",
-            price=29.99 + i,
-            stock=50 - i * 5,
-            category="Best Seller Category",
-            image_url="https://via.placeholder.com/150"
-        ) for i in range(1, limit + 1)
-    ]
-
-    print(f"模擬後端：回傳熱銷商品列表，數量: {len(mock_bestsellers)}")
-    return mock_bestsellers
 
 # @app.get("/api/orders/{order_id}", response_model=OrderOut)
 # def get_order_detail(order_id: int, db=Depends(get_db)):
