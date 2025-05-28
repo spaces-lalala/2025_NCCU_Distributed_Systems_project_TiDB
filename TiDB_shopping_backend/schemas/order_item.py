@@ -7,6 +7,7 @@ class OrderItemBase(BaseModel):
 class OrderItemOut(OrderItemBase):
     id: str
     product_name: str
+    quantity: int
     price: float
 
     class Config:

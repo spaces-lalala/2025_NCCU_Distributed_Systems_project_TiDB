@@ -2,16 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.orm import Session
 from database import get_db
-from TiDB_shopping_backend.models.order import Order, OrderItem, Product
-from schemas import OrderBase, OrderCreationRequest, OrderItemBase
-from dependencies import get_current_user_id
+from models import Order, OrderItem, Product
+from schemas import OrderOut, OrderCreationRequest, OrderItemBase
+from schemas.order import OrderOut
 import uuid
 from datetime import datetime
 from sqlalchemy import select
+from dependencies.auth import get_current_user_id
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
 
-@router.post("/", response_model=OrderBase, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=OrderOut, status_code=status.HTTP_201_CREATED)
 def create_order(
     order_data: OrderCreationRequest,
     current_user_id: str = Depends(get_current_user_id),
@@ -56,7 +57,7 @@ def create_order(
     db.commit()
     db.refresh(new_order)
 
-    return OrderBase(
+    return OrderOut(
         id=new_order.id,
         orderNumber=new_order.order_number,
         orderDate=new_order.order_date.isoformat(),
@@ -74,7 +75,7 @@ def create_order(
     )
 
 
-@router.get("/", response_model=List[OrderBase])
+@router.get("/", response_model=List[OrderOut])
 def get_orders(
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
@@ -83,7 +84,7 @@ def get_orders(
     
     orders_response = []
     for order in orders:
-        orders_response.append(OrderBase(
+        orders_response.append(OrderOut(
             id=order.id,
             orderNumber=order.order_number,
             orderDate=order.order_date.isoformat(),
@@ -102,7 +103,7 @@ def get_orders(
     return orders_response
 
 
-@router.get("/{order_id}", response_model=OrderBase)
+@router.get("/{order_id}", response_model=OrderOut)
 def get_order_detail(
     order_id: str,
     current_user_id: str = Depends(get_current_user_id),
@@ -112,7 +113,7 @@ def get_order_detail(
     if not order or order.user_id != current_user_id:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    return OrderBase(
+    return OrderOut(
         id=order.id,
         orderNumber=order.order_number,
         orderDate=order.order_date.isoformat(),
@@ -129,7 +130,7 @@ def get_order_detail(
         userId=order.user_id
     )
 
-@router.post("/{order_id}/cancel", response_model=OrderBase)
+@router.post("/{order_id}/cancel", response_model=OrderOut)
 def cancel_order_route(
     order_id: str,
     current_user_id: str = Depends(get_current_user_id),
@@ -137,7 +138,7 @@ def cancel_order_route(
 ):
     from services.order_service import cancel_order
     order = cancel_order(db, current_user_id, order_id)
-    return order
+    return OrderOut.from_orm(order)
 
 @router.patch("/{order_id}/status")
 def update_order_status_route(
@@ -150,7 +151,7 @@ def update_order_status_route(
     return {"message": f"Order {order_id} updated to {status}"}
 
 
-@router.get("/status/{status}", response_model=List[OrderBase])
+@router.get("/status/{status}", response_model=List[OrderOut])
 def get_orders_by_status(
     status: str,
     current_user_id: str = Depends(get_current_user_id),
@@ -158,7 +159,7 @@ def get_orders_by_status(
 ):
     orders = db.query(Order).filter(Order.user_id == current_user_id, Order.status == status).all()
     return [
-        OrderBase(
+        OrderOut(
             id=order.id,
             orderNumber=order.order_number,
             orderDate=order.order_date.isoformat(),

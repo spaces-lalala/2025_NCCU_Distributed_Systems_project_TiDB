@@ -4,7 +4,7 @@ from models.order_item import OrderItem
 from models.product import Product
 from models.order import Order
 
-def get_bestsellers(db: Session, limit: int = 5):
+def get_best_sellers(db: Session, limit: int = 5):
     results = (
         db.query(
             Product,
