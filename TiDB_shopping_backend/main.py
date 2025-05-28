@@ -166,10 +166,18 @@ class ProductOut(BaseModel):
     category_name: Optional[str]
     
 class ProductDetailOut(ProductOut):
-    description: Optional[str] = None
+    # description: Optional[str] = None
+    # stock: int
+    # category: Optional[CategoryOut] = None
+    id: int
+    name: str
+    price: float
+    image_url: Optional[str]
+    sold: Optional[int]
     stock: int
-    category: Optional[CategoryOut] = None
-
+    description: Optional[str]
+    category_name: Optional[str]
+    
 class ErrorDetail(BaseModel):
     detail: str
 # 添加缺失的 get_db 函數

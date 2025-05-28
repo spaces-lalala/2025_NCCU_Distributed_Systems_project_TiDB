@@ -97,26 +97,49 @@ const mockProducts: Product[] = [
   }
 ];
 
+// const fetchProductDetails = async () => {
+//   isLoading.value = true;
+//   const productId = route.params.id as string;
+
+//   try {
+//     const response = await fetch(`/api/products/${productId}`);//後端的路徑
+//     if (!response.ok) throw new Error('Fetch failed');
+
+//     const stockData = await res.json();
+
+//     const mock = mockProducts.find(p => p.id === productId);
+//     if (!mock) throw new Error('找不到 mock 商品');
+
+//     const finalProduct = {
+//       ...mock,
+//       stock: stockData.stock,
+//       price: stockData.stock < 500 ? mock.price + 10 : mock.price
+//     };
+
+//     product.value = finalProduct;
+//   } catch (error) {
+//     console.error('商品讀取失敗：', error);
+//     product.value = null;
+//   } finally {
+//     isLoading.value = false;
+//   }
+// };
+
 const fetchProductDetails = async () => {
   isLoading.value = true;
   const productId = route.params.id as string;
 
   try {
-    const response = await fetch(`/api/products/${productId}`);//後端的路徑
+    const response = await fetch(`/api/products/${productId}`);
     if (!response.ok) throw new Error('Fetch failed');
 
-    const stockData = await res.json();
+    const data: Product = await response.json();
 
-    const mock = mockProducts.find(p => p.id === productId);
-    if (!mock) throw new Error('找不到 mock 商品');
-
-    const finalProduct = {
-      ...mock,
-      stock: stockData.stock,
-      price: stockData.stock < 500 ? mock.price + 10 : mock.price
+    // 若有需要調整圖片欄位
+    product.value = {
+      ...data,
+      imageUrl: data.image_url,  // 轉換圖片欄位
     };
-
-    product.value = finalProduct;
   } catch (error) {
     console.error('商品讀取失敗：', error);
     product.value = null;
@@ -124,6 +147,7 @@ const fetchProductDetails = async () => {
     isLoading.value = false;
   }
 };
+
 
 const addToCart = () => {
   if (!product.value) return;
