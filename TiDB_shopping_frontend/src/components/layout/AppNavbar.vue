@@ -23,6 +23,7 @@
             <el-icon><ShoppingCart /></el-icon>
             購物車 <el-badge :value="cartItemCount" :hidden="cartItemCount === 0" class="cart-badge"></el-badge>
           </el-menu-item>
+          <el-menu-item index="/admin">管理者後台</el-menu-item>
         </el-menu>
       </el-col>
     </el-row>
