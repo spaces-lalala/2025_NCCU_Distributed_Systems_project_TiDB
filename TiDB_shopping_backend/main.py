@@ -6,7 +6,7 @@ import time # For generating a mock token (very basic)
 from datetime import datetime # For order date
 from database import engine
 from database import Base
-from api import orders, payments, product
+from api import orders, payments, products
 from models import order_item, order, product
 from api import items
 from dependencies.auth import get_current_user_id
@@ -17,7 +17,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI()
 app.include_router(orders.router)
 #app.include_router(users.router)
-app.include_router(product.router)
+app.include_router(products.router)
 app.include_router(payments.router)
 app.include_router(items.router)
 # --- Pydantic Models ---

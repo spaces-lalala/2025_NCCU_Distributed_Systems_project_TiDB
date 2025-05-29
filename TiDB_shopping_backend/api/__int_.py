@@ -1,4 +1,4 @@
-from . import product
+from . import products
 from . import orders
 from . import payments
-from . import product
+from . import products
