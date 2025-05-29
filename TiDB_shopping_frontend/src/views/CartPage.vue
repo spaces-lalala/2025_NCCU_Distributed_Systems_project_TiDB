@@ -71,7 +71,7 @@ import { useRouter } from 'vue-router';
 const cartStore = useCartStore();
 const router = useRouter();
 
-const handleQuantityChange = (productId: string, newQuantity: number | undefined) => {
+const handleQuantityChange = async (productId: string | number, newQuantity: number | undefined) => {
   if (newQuantity === undefined || newQuantity < 1) {
     // If undefined or less than 1, treat as attempt to remove or invalid input, 
     // consider prompting to remove or setting to 1.
@@ -79,15 +79,32 @@ const handleQuantityChange = (productId: string, newQuantity: number | undefined
     // If the change event fires with undefined, it might mean the field was cleared.
     // We might want to remove the item or set quantity to 1.
     // For simplicity, if newQuantity is undefined, we can re-fetch the current quantity or set to 1
-    const item = cartStore.getCartItems.find(i => i.id === productId);
+    const item = cartStore.getCartItems.find(i => i.id == productId); // 使用 == 來比較不同類型
     if (item) cartStore.updateItemQuantity(productId, item.quantity); // revert or set to 1
     return;
   }
-  cartStore.updateItemQuantity(productId, newQuantity);
-  ElMessage.success('購物車數量已更新');
+
+  // 使用新的庫存驗證方法
+  const success = await cartStore.updateItemQuantity(productId, newQuantity);
+  if (success) {
+    ElMessage.success('購物車數量已更新');
+  } else {
+    // 獲取最新庫存並顯示錯誤訊息
+    const currentStock = await cartStore.checkProductStock(productId);
+    if (currentStock === null) {
+      ElMessage.error('無法驗證庫存，請稍後再試');
+    } else if (currentStock <= 0) {
+      ElMessage.error('商品已售完，將從購物車中移除');
+      cartStore.removeItem(productId);
+    } else {
+      ElMessage.warning(`庫存不足，目前僅剩 ${currentStock} 件，已調整至最大可購買數量`);
+      // 將數量調整為庫存數量
+      await cartStore.updateItemQuantity(productId, currentStock);
+    }
+  }
 };
 
-const confirmRemoveItem = (productId: string) => {
+const confirmRemoveItem = (productId: string | number) => {
   ElMessageBox.confirm(
     '您確定要從購物車中移除此商品嗎？',
     '確認移除',
@@ -127,13 +144,30 @@ const confirmClearCart = () => {
   });
 };
 
-const goToCheckout = () => {
+const goToCheckout = async () => {
   // For now, just a placeholder. Later, this will navigate to the checkout page.
   if (cartStore.isEmpty) {
     ElMessage.warning('您的購物車是空的，請先加入商品再結帳。');
     return;
   }
-  ElMessage.info('準備前往結帳頁面... (功能待實現)');
+
+  // 結帳前驗證整個購物車的庫存
+  ElMessage.info('正在驗證商品庫存...');
+  const validation = await cartStore.validateCartStock();
+  
+  if (!validation.valid) {
+    ElMessageBox.alert(
+      validation.issues.join('\n'),
+      '庫存不足，無法結帳',
+      {
+        confirmButtonText: '確定',
+        type: 'warning',
+      }
+    );
+    return;
+  }
+
+  ElMessage.success('庫存驗證通過，前往結帳頁面');
   router.push('/checkout'); // Navigate to checkout page
 };
 

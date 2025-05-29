@@ -10,7 +10,6 @@ ALGORITHM = "HS256"
 # --- JWT Authentication ---
 async def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
     if not authorization:
-        print("模擬後端：缺少 Authorization header")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated (missing token)",
@@ -19,7 +18,6 @@ async def get_current_user_id(authorization: Optional[str] = Header(None)) -> st
     
     parts = authorization.split()
     if parts[0].lower() != "bearer" or len(parts) != 2:
-        print(f"模擬後端：Authorization header 格式錯誤: {authorization}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token format",
@@ -27,7 +25,6 @@ async def get_current_user_id(authorization: Optional[str] = Header(None)) -> st
         )
     
     token = parts[1]
-    print(f"模擬後端：收到的 Token: {token}")
     
     # JWT token validation
     try:
@@ -36,17 +33,14 @@ async def get_current_user_id(authorization: Optional[str] = Header(None)) -> st
         if user_id is None:
             raise JWTError("Token payload missing 'sub' field")
         
-        print(f"模擬後端：從 JWT Token 中解析到的 User ID: {user_id}")
         return user_id
     except JWTError as e:
-        print(f"模擬後端：JWT Token 驗證失敗: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
     except Exception as e:
-        print(f"模擬後端：驗證 Token 時發生未知錯誤: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",

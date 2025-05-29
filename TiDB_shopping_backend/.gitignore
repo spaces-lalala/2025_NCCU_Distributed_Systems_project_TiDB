@@ -5,12 +5,11 @@ __pycache__/
 *.pyd
 
 # Virtual environment
-# Note: Replace 'backend_venv' with your actual venv name if different
-backend_venv/
 venv/
 .venv/
 ENV/
 env/
+backend_venv/
 
 # Distribution / packaging
 build/
@@ -18,23 +17,23 @@ dist/
 *.egg-info/
 *.egg
 
-# Local environment variables
+# Environment variables and secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.template
 
 # TiDB SSL certificate (uncomment if you don't want to version it)
 # isrgrootx1.pem
 
-# IDE / Editor specific (if any very specific to backend, otherwise keep in root .gitignore)
-# e.g., specific database files or logs not covered by root
+# IDE / Editor specific
 .idea/
 .vscode/settings.json
 .vscode/launch.json
 *.sublime-project
 *.sublime-workspace
 
-# Coverage reports
+# Testing and coverage
 .coverage
 coverage.xml
 htmlcov/
@@ -42,11 +41,11 @@ htmlcov/
 .mypy_cache/
 .tox/
 
-# SQLite (if used locally for testing, and not versioned)
-# *.sqlite3
-# *.db
+# SQLite databases (if used for local testing)
+*.sqlite3
+*.db
 
-# Log files specific to backend
+# Log files
 *.log
 logs/
 
@@ -54,22 +53,18 @@ logs/
 *.pid
 
 # Python specific temporary files
-*.pyo
-*.pyd
 .Python
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Jupyter Notebook checkpoints (if using notebooks for analysis)
+# Jupyter Notebook checkpoints
 .ipynb_checkpoints
 
-# pyenv
+# Python version files
 .python-version
 
-# pipenv
+# Package manager lock files
 Pipfile.lock
-
-# Poetry
 poetry.lock
 
 # Temporary files
@@ -82,3 +77,12 @@ poetry.lock
 # Backup files  
 *.bak
 *.backup
+
+# OS specific
+.DS_Store
+Thumbs.db
+._*
+
+# Security and secrets
+secrets.json
+credentials.json
