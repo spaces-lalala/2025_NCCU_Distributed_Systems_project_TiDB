@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 class ProductBase(BaseModel):
-    id:str
+    id: int
     name: str
     description: Optional[str] = None
     price: float
@@ -12,8 +12,23 @@ class ProductBase(BaseModel):
 class ProductCreate(ProductBase):
     pass
 
-class ProductOut(ProductBase):
+class ProductOut(BaseModel):
+    id: int
+    name: str
+    price: float
+    image_url: Optional[str] = None
+    sold: Optional[int]
+    category_name: Optional[str]
+    
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class ProductDetailOut(ProductOut):
+    stock: int
+    description: Optional[str]
+    
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class ErrorDetail(BaseModel):
+    detail: str

@@ -20,15 +20,65 @@ dist/
 
 # Local environment variables
 .env
+.env.local
+.env.*.local
+
+# TiDB SSL certificate (uncomment if you don't want to version it)
+# isrgrootx1.pem
 
 # IDE / Editor specific (if any very specific to backend, otherwise keep in root .gitignore)
 # e.g., specific database files or logs not covered by root
+.idea/
+.vscode/settings.json
+.vscode/launch.json
+*.sublime-project
+*.sublime-workspace
 
 # Coverage reports
 .coverage
 coverage.xml
 htmlcov/
+.pytest_cache/
+.mypy_cache/
+.tox/
 
 # SQLite (if used locally for testing, and not versioned)
 # *.sqlite3
-# *.db 
+# *.db
+
+# Log files specific to backend
+*.log
+logs/
+
+# FastAPI specific
+*.pid
+
+# Python specific temporary files
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Jupyter Notebook checkpoints (if using notebooks for analysis)
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# Poetry
+poetry.lock
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Backup files  
+*.bak
+*.backup

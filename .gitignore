@@ -113,6 +113,42 @@ Thumbs.db
 # *.log
 # logs/ 
 
+# TiDB specific files
+# isrgrootx1.pem  # SSL certificate - keep commented if you want to version it
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# OS specific files (additional)
+.Spotlight-V100
+.Trashes
+._*
+*.lnk
+
+# Development and testing
+.pytest_cache/
+.mypy_cache/
+.tox/
+htmlcov/
+
+# Package manager files
+*.lock
+!package-lock.json  # Keep npm lock file for reproducible builds
+yarn.lock
+pnpm-lock.yaml
+
+# Editor specific
+*.sublime-project
+*.sublime-workspace
+.history/
 
 ui-design-creation.mdc
 shopping_site_frontend_plan.md

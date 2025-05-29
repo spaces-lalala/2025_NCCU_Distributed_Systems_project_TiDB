@@ -5,8 +5,8 @@ from database import Base
 class Item(Base):
     __tablename__ = "items"
 
-    id = Column(String, primary_key=True, index=True)
-    name = Column(String, index=True)
-    description = Column(String, nullable=True)
+    id = Column(String(64), primary_key=True, index=True)
+    name = Column(String(255), index=True)
+    description = Column(String(1000), nullable=True)
     price = Column(Float)
     quantity = Column(Integer)

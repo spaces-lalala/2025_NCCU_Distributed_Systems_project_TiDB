@@ -13,8 +13,9 @@ class OrderOut(OrderBase):
     order_date: datetime
     user_id: str
     items: List[OrderItemOut]
+    
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class OrderCreationRequest(BaseModel):
     items: List[OrderItemBase]

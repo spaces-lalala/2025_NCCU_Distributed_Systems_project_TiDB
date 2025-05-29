@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 class OrderItemBase(BaseModel):
-    product_id: str
+    product_id: int
     quantity: int
 
 class OrderItemOut(OrderItemBase):
@@ -11,4 +11,4 @@ class OrderItemOut(OrderItemBase):
     price: float
 
     class Config:
-        orm_mode = True
+        from_attributes = True

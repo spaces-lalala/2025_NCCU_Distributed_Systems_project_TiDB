@@ -155,28 +155,22 @@ const handleSubmitOrder = async () => {
   await shippingFormRef.value.validate(async (valid) => {
     if (valid) {
       isSubmitting.value = true;
-      try {
-        const itemsForApi: OrderItemForCreation[] = cartStore.getCartItems.map(item => ({
-          productId: item.id,       // Changed from product_id, assuming item.id is productId
-          productName: item.name,   // Added, assuming item.name is productName
-          quantity: item.quantity,
-          price: item.price         // Assuming item.price is unit price
+      try {        const itemsForApi: OrderItemForCreation[] = cartStore.getCartItems.map(item => ({
+          product_id: parseInt(item.id),  // Backend expects product_id as integer
+          quantity: item.quantity
         }));
 
         const payloadForApi: OrderCreationPayload = {
-          items: itemsForApi,
-          totalAmount: grandTotal.value, // Changed from total_amount
-        };
+          items: itemsForApi
+        };        const createdOrder: Order = await createOrder(payloadForApi);
 
-        const createdOrder: Order = await createOrder(payloadForApi);
-
-        ElMessage.success(`訂單已成功提交！訂單編號: ${createdOrder.orderNumber}`);
+        ElMessage.success(`訂單已成功提交！訂單編號: ${createdOrder.order_number}`);
         cartStore.clearCart();
         router.push({
           name: 'OrderConfirmation',
           params: { 
             orderId: createdOrder.id,
-            orderNumber: createdOrder.orderNumber
+            orderNumber: createdOrder.order_number
           }
         });
 

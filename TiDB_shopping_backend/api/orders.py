@@ -5,14 +5,15 @@ from database import get_db
 from models import Order, OrderItem, Product
 from schemas import OrderOut, OrderCreationRequest, OrderItemBase
 from schemas.order import OrderOut
+from schemas.order_item import OrderItemOut
 import uuid
 from datetime import datetime
 from sqlalchemy import select
 from dependencies.auth import get_current_user_id
 
-router = APIRouter(prefix="/api/orders", tags=["orders"])
+router = APIRouter(prefix="/api", tags=["orders"])
 
-@router.post("/", response_model=OrderOut, status_code=status.HTTP_201_CREATED)
+@router.post("/orders", response_model=OrderOut, status_code=status.HTTP_201_CREATED)
 def create_order(
     order_data: OrderCreationRequest,
     current_user_id: str = Depends(get_current_user_id),
@@ -21,8 +22,15 @@ def create_order(
     order_id = str(uuid.uuid4())
     order_number = f"ORD-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{order_id[:8]}"
     
-    # 計算 total amount (可驗證前端傳來的金額)
-    total_amount = sum(item.price * item.quantity for item in order_data.items)
+    # 計算 total amount - 從數據庫獲取實際價格
+    total_amount = 0
+    for item in order_data.items:
+        product = db.query(Product).filter(Product.id == item.product_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product {item.product_id} not found")
+        if product.stock < item.quantity:
+            raise HTTPException(status_code=400, detail=f"Not enough stock for product {product.name}")
+        total_amount += product.price * item.quantity
     
     new_order = Order(
         id=order_id,
@@ -36,11 +44,8 @@ def create_order(
     
     # 建立訂單項目 & 扣庫存
     for item in order_data.items:
-        product = db.query(Product).filter(Product.id == item.productId).first()
-        if not product:
-            raise HTTPException(status_code=404, detail=f"Product {item.productId} not found")
-        if product.stock < item.quantity:
-            raise HTTPException(status_code=400, detail=f"Not enough stock for product {product.name}")
+        product = db.query(Product).filter(Product.id == item.product_id).first()
+        # 產品存在性和庫存已在上面檢查過，但我們需要再次獲取以更新庫存
         
         product.stock -= item.quantity
         
@@ -50,32 +55,33 @@ def create_order(
             product_id=product.id,
             product_name=product.name,
             quantity=item.quantity,
-            price=item.price
+            price=product.price  # 使用從數據庫獲取的價格
         )
         db.add(order_item)
 
     db.commit()
     db.refresh(new_order)
-
+    
     return OrderOut(
         id=new_order.id,
-        orderNumber=new_order.order_number,
-        orderDate=new_order.order_date.isoformat(),
-        totalAmount=new_order.total_amount,
+        order_number=new_order.order_number,
+        order_date=new_order.order_date,
+        total_amount=new_order.total_amount,
         status=new_order.status,
+        user_id=new_order.user_id,
         items=[
-            OrderItemBase(
-                productId=oi.product_id,
-                productName=oi.product_name,
+            OrderItemOut(
+                id=oi.id,
+                product_id=oi.product_id,
+                product_name=oi.product_name,
                 quantity=oi.quantity,
                 price=oi.price
             ) for oi in new_order.items
-        ],
-        userId=new_order.user_id
+        ]
     )
 
 
-@router.get("/", response_model=List[OrderOut])
+@router.get("/orders", response_model=List[OrderOut])
 def get_orders(
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
@@ -86,24 +92,25 @@ def get_orders(
     for order in orders:
         orders_response.append(OrderOut(
             id=order.id,
-            orderNumber=order.order_number,
-            orderDate=order.order_date.isoformat(),
-            totalAmount=order.total_amount,
+            order_number=order.order_number,
+            order_date=order.order_date,
+            total_amount=order.total_amount,
             status=order.status,
+            user_id=order.user_id,
             items=[
-                OrderItemBase(
-                    productId=item.product_id,
-                    productName=item.product_name,
+                OrderItemOut(
+                    id=item.id,
+                    product_id=item.product_id,
+                    product_name=item.product_name,
                     quantity=item.quantity,
                     price=item.price
                 ) for item in order.items
-            ],
-            userId=order.user_id
+            ]
         ))
     return orders_response
 
 
-@router.get("/{order_id}", response_model=OrderOut)
+@router.get("/orders/{order_id}", response_model=OrderOut)
 def get_order_detail(
     order_id: str,
     current_user_id: str = Depends(get_current_user_id),
@@ -115,22 +122,23 @@ def get_order_detail(
 
     return OrderOut(
         id=order.id,
-        orderNumber=order.order_number,
-        orderDate=order.order_date.isoformat(),
-        totalAmount=order.total_amount,
+        order_number=order.order_number,
+        order_date=order.order_date,
+        total_amount=order.total_amount,
         status=order.status,
+        user_id=order.user_id,
         items=[
-            OrderItemBase(
-                productId=item.product_id,
-                productName=item.product_name,
+            OrderItemOut(
+                id=item.id,
+                product_id=item.product_id,
+                product_name=item.product_name,
                 quantity=item.quantity,
                 price=item.price
             ) for item in order.items
-        ],
-        userId=order.user_id
+        ]
     )
 
-@router.post("/{order_id}/cancel", response_model=OrderOut)
+@router.post("/orders/{order_id}/cancel", response_model=OrderOut)
 def cancel_order_route(
     order_id: str,
     current_user_id: str = Depends(get_current_user_id),
@@ -140,7 +148,7 @@ def cancel_order_route(
     order = cancel_order(db, current_user_id, order_id)
     return OrderOut.from_orm(order)
 
-@router.patch("/{order_id}/status")
+@router.patch("/orders/{order_id}/status")
 def update_order_status_route(
     order_id: str,
     status: str,
@@ -149,47 +157,3 @@ def update_order_status_route(
     from services.order_service import update_order_status
     order = update_order_status(db, order_id, status)
     return {"message": f"Order {order_id} updated to {status}"}
-
-
-@router.get("/status/{status}", response_model=List[OrderOut])
-def get_orders_by_status(
-    status: str,
-    current_user_id: str = Depends(get_current_user_id),
-    db: Session = Depends(get_db)
-):
-    orders = db.query(Order).filter(Order.user_id == current_user_id, Order.status == status).all()
-    return [
-        OrderOut(
-            id=order.id,
-            orderNumber=order.order_number,
-            orderDate=order.order_date.isoformat(),
-            totalAmount=order.total_amount,
-            status=order.status,
-            items=[
-                OrderItemBase(
-                    productId=item.product_id,
-                    productName=item.product_name,
-                    quantity=item.quantity,
-                    price=item.price
-                ) for item in order.items
-            ],
-            userId=order.user_id
-        )
-        for order in orders
-    ]
-
-@router.delete("/{order_id}")
-def delete_order(
-    order_id: str,
-    current_user_id: str = Depends(get_current_user_id),
-    db: Session = Depends(get_db)
-):
-    order = db.query(Order).filter(Order.id == order_id, Order.user_id == current_user_id).first()
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
-    if order.status not in ["CANCELLED", "COMPLETED"]:
-        raise HTTPException(status_code=400, detail="Can only delete cancelled or completed orders")
-    
-    db.delete(order)
-    db.commit()
-    return {"message": f"Order {order_id} deleted successfully"}
