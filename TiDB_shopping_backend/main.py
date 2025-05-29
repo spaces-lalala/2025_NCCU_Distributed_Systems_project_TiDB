@@ -30,7 +30,7 @@ app = FastAPI()
 # ------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5002"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -354,10 +354,26 @@ def get_bestsellers(limit: int = 5, db: Session = Depends(get_db)):
 
 @app.get("/api/products/{product_id}", response_model=ProductDetailOut, responses={404: {"model": ErrorDetail}})
 def get_product_detail(product_id: int, db: Session = Depends(get_db)):
-    product = db.query(Product).filter(Product.id == product_id).first()
+    """
+    Fetch product details, including description, from the database.
+    """
+    # 查詢資料庫中的產品
+    search_id = f"1{product_id}"
+    product = db.query(Product).filter(Product.id == search_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    return product
+    
+    # 返回產品詳細資訊，包括 description
+    return ProductDetailOut(
+    id=product.id,
+    name=product.name,
+    description=product.description,
+    price=product.price,
+    image_url=product.image_url,
+    sold=product.sold,
+    stock=product.stock,
+    category_name=product.category_name
+)
 
 
 @app.get("/api/orders/", response_model=List[OrderSummaryOut]) # Frontend expects a list of orders directly
