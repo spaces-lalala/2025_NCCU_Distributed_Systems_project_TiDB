@@ -20,7 +20,7 @@
         <h3 class="section-title">熱門推薦</h3>
         <el-row :gutter="20">
           <!-- Loop for 3 Product Cards -->
-          <el-col :xs="24" :sm="12" :md="8" v-for="product in mockProducts.slice(0, 3)" :key="product.id" style="margin-bottom: 20px;">
+          <el-col :xs="24" :sm="12" :md="8" v-for="product in featuredProducts.slice(0, 3)" :key="product.id" style="margin-bottom: 20px;">
             <!-- Placeholder for ProductCard component -->
             <el-card shadow="hover">
               <img :src="product.imageUrl" class="product-image" :alt="product.name" />
@@ -52,6 +52,8 @@
 
 <script lang="ts" setup>
 import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
+import { productImageMap } from '@/assets/images/ProductImageMaps';
 import tidbShirtImg from '@/assets/images/tidb-shirt.png';
 import htapimg from '@/assets/images/HTAP.png';
 import cloudimg from '@/assets/images/cloud.png';
@@ -69,42 +71,37 @@ const mockProducts: Product[] = [
   ];
 
 // Dummy data for products, replace with API call later
-// interface Product {
-//   id: number;
-//   name: string;
-//   description: string;
-//   price: number;
-//   imageUrl: string;
-// }
-// const featuredProducts = ref<Product[]>([]);
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  imageUrl: string;
+  category: string;
+}
+ const featuredProducts = ref<Product[]>([]);
 
-// onMounted(async () => {
-//   // TODO: Fetch featured products from API
-//   // For now, using placeholders
-//   try {
-//    const res = await fetch('/api/products'); // 假設這是你的後端 API 路由
-//    const stockData: { id: string; stock: number }[] = await res.json();
+onMounted(async () => {
+  try {
+    const response = await fetch("http://localhost:8000/api/products");
+    const allProducts: Product[] = await response.json();
 
-//    // 將 stock merge 到 mockProducts，並調整價格
-//    const merged = mockProducts.map((mock) => {
-//      const stockInfo = stockData.find(item => item.id === mock.id);
-//      const updatedStock = stockInfo ? stockInfo.stock : mock.stock;
-//      const adjustedPrice = updatedStock < 500 ? mock.price + 10 : mock.price;
-
-//      return {
-//        ...mock,
-//        stock: updatedStock,
-//        price: adjustedPrice
-//      };
-//    });
-
-//    featuredProducts.value = merged.slice(0, 3);
-//  } catch (error) {
-//    console.error('取得庫存資料失敗', error);
-//    // fallback：使用 mockProducts 原本資料
-//    featuredProducts.value = mockProducts.slice(0, 3);
-//  }    
-// });
+    // 對每個產品應用圖片轉換邏輯
+    featuredProducts.value = allProducts.slice(0, 3).map(product => {
+      const stock = Number(product.stock);
+      const price = Number(product.price);
+      return {
+        ...product,
+        imageUrl: productImageMap[product.name] ?? product.image_url ?? '',
+        price: stock < 500 ? price + 10 : price,
+        stock,
+      };
+    });
+  } catch (error) {
+    console.error('取得商品資料失敗', error);
+  }
+});
 
 const goToBestSellers = () => {
   router.push('/bestsellers'); // Assuming you have a route named 'bestsellers'
