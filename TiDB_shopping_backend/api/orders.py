@@ -49,6 +49,10 @@ def create_order(
         
         product.stock -= item.quantity
         
+        # 🔥 HTAP 相容：可選的即時更新 sold 欄位（展示即時性）
+        # 注意：真正的 HTAP 不應該依賴這個欄位，而是即時從訂單計算
+        product.sold = (product.sold or 0) + item.quantity
+        
         order_item = OrderItem(
             id=str(uuid.uuid4()),
             order_id=order_id,
@@ -58,6 +62,9 @@ def create_order(
             price=product.price  # 使用從數據庫獲取的價格
         )
         db.add(order_item)
+
+    # 🚀 HTAP 展示：印出即時分析訊息
+    print(f"📦 訂單 {order_number} 已創建，TiDB HTAP 可即時分析最新銷售數據")
 
     db.commit()
     db.refresh(new_order)
