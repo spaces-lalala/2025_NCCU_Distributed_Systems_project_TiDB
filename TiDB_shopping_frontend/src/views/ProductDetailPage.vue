@@ -34,6 +34,8 @@ import type { Product } from '@/types/product';
 import { useCartStore } from '@/store/cart';
 import { ElMessage } from 'element-plus';
 
+import { productImageMap } from '@/assets/images/ProductImageMaps';
+
 const route = useRoute();
 const router = useRouter(); // Optional: for navigation if needed
 
@@ -42,58 +44,61 @@ const quantity = ref<number>(1);
 const isLoading = ref<boolean>(true);
 const cartStore = useCartStore();
 
-// Mock product data (same as in ProductListPage for now)
-// In a real app, this would come from a shared service or store, or be fetched directly
-const mockProducts: Product[] = [
-  {
-    id: '1',
-    name: 'TiDB 官方限量版 T-Shirt',
-    description: '舒適純棉，印有 TiDB Logo，開發者必備信仰充值潮服。',
-    price: 25.00,
-    stock: 100,
-    imageUrl: 'https://via.placeholder.com/400x300.png?text=TiDB+T-Shirt',
-    category: '服裝',
-  },
-  {
-    id: '2',
-    name: '高效能HTAP資料庫實戰手冊',
-    description: '深入淺出 TiDB 架構與應用，從入門到精通，解鎖數據潛能。',
-    price: 49.99,
-    stock: 50,
-    imageUrl: 'https://via.placeholder.com/400x300.png?text=TiDB+Handbook',
-    category: '書籍',
-  },
-  {
-    id: '3',
-    name: 'TiDB 雲服務體驗券 (1個月)',
-    description: '免費體驗 TiDB Cloud Developer Tier 一個月，輕鬆部署與管理您的 TiDB 叢集。',
-    price: 0.00,
-    stock: 200,
-    imageUrl: 'https://via.placeholder.com/400x300.png?text=TiDB+Cloud+Voucher',
-    category: '服務',
-  },
-  {
-    id: '4',
-    name: 'PingCAP 定製鍵帽組',
-    description: '機械鍵盤愛好者福音，PingCAP 特色設計，為您的鍵盤增添個性。',
-    price: 15.00,
-    stock: 75,
-    imageUrl: 'https://via.placeholder.com/400x300.png?text=PingCAP+Keycaps',
-    category: '配件',
-  }
-];
+
+
+
+// const fetchProductDetails = async () => {
+//   isLoading.value = true;
+//   const productId = route.params.id as string;
+
+//   try {
+//     const response = await fetch(`/api/products/${productId}`);//後端的路徑
+//     if (!response.ok) throw new Error('Fetch failed');
+
+//     const stockData = await res.json();
+
+//     const mock = mockProducts.find(p => p.id === productId);
+//     if (!mock) throw new Error('找不到 mock 商品');
+
+//     const finalProduct = {
+//       ...mock,
+//       stock: stockData.stock,
+//       price: stockData.stock < 500 ? mock.price + 10 : mock.price
+//     };
+
+//     product.value = finalProduct;
+//   } catch (error) {
+//     console.error('商品讀取失敗：', error);
+//     product.value = null;
+//   } finally {
+//     isLoading.value = false;
+//   }
+// };
 
 const fetchProductDetails = async () => {
   isLoading.value = true;
   const productId = route.params.id as string;
-  
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  const foundProduct = mockProducts.find(p => p.id === productId);
-  product.value = foundProduct || null;
-  isLoading.value = false;
+
+  try {
+    const response = await fetch(`/api/products/${productId}`);
+    if (!response.ok) throw new Error('Fetch failed');
+
+    const data: Product = await response.json();
+
+    // 若有需要調整圖片欄位
+    product.value = {
+      ...data,
+      // imageUrl: data.image_url,  // 轉換圖片欄位
+      imageUrl: productImageMap[data.name] ?? data.image_url ?? '', // 優先用 map，再 fallback
+    };
+  } catch (error) {
+    console.error('商品讀取失敗：', error);
+    product.value = null;
+  } finally {
+    isLoading.value = false;
+  }
 };
+
 
 const addToCart = () => {
   if (!product.value) return;
