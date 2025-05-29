@@ -7,17 +7,18 @@ import uuid # For generating a mock user ID
 import time # For generating a mock token (very basic)
 from datetime import datetime # For order date
 from database import engine, SessionLocal, get_db
-from models import Base, User, Product, Category
+from database import Base
+from api import orders, payments, products
+from models import order_item, order, product, User, Product, Category
+from api import items
+from dependencies.auth import get_current_user_id
 from sqlalchemy.orm import Session
-from utils import hash_password
-import uuid
-from utils import verify_password, hash_password
+from utils import hash_password, verify_password
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
-
 
 Base.metadata.create_all(bind=engine)
 
@@ -35,7 +36,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+app.include_router(orders.router)
+#app.include_router(users.router)
+app.include_router(products.router)
+app.include_router(payments.router)
+app.include_router(items.router)
 # --- Pydantic Models ---
 
 class UserRegistrationRequest(BaseModel):
@@ -180,17 +185,14 @@ class ProductDetailOut(ProductOut):
     
 class ErrorDetail(BaseModel):
     detail: str
-# 添加缺失的 get_db 函數
-from sqlalchemy.orm import Session
 
+# 添加缺失的 get_db 函數
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-
-# --- Mock API Endpoints ---
 
 @app.post("/api/auth/register", response_model=AuthSuccessResponse, status_code=status.HTTP_201_CREATED)
 def register_user(
@@ -310,7 +312,6 @@ def update_user_profile(
 
 
 # --------- Products Router  ----------
-from products import mock_categories, mock_products
 @app.get("/api/products", response_model=List[ProductOut])
 def get_products(
     skip: int = 0,
@@ -381,79 +382,32 @@ def get_user_orders(
     skip: int = 0,
     limit: int = 10,
     status: Optional[str] = None,
-    current_user: dict = Depends(get_current_user)
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
 ):
-    orders = [o for o in mock_orders if o["user_id"] == current_user.id]
-    if status:
-        orders = [o for o in orders if o["status"] == status]
-
-    summaries = [
-        {
-            "id": o["id"],
-            "total_amount": o["total_amount"],
-            "status": o["status"],
-            "created_at": o["created_at"],
-            "item_count": sum(item["quantity"] for item in o["items"])
-        }
-        for o in orders[skip: skip + limit]
-    ]
-    return summaries
+    # 這裡應該從資料庫查詢訂單，而不是使用 mock 資料
+    # TODO: 實作從資料庫查詢訂單的邏輯
+    return []
 
 @app.get("/api/orders/{order_id}", response_model=OrderOut)
 def get_order_detail(
     order_id: int,
-    current_user: dict = Depends(get_current_user)
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
 ):
-    order = next((o for o in mock_orders if o["id"] == order_id), None)
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
-    if order["user_id"] != current_user.id:
-        raise HTTPException(status_code=403, detail="Permission denied")
-    return order
+    # 這裡應該從資料庫查詢特定訂單，而不是使用 mock 資料
+    # TODO: 實作從資料庫查詢訂單詳情的邏輯
+    raise HTTPException(status_code=404, detail="Order not found")
 
 @app.post("/api/orders/", response_model=OrderOut, status_code=201)
 def create_order(
     order_data: dict,
-    current_user: dict = Depends(get_current_user)
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
 ):
-    global order_id_seq
-    items = order_data["items"]
-    shipping = order_data["shipping_address"]
-    payment_method = order_data["payment_method"]
-
-    order_items = []
-    total = 0
-
-    for item in items:
-        product = next((p for p in mock_products if p["id"] == item["product_id"]), None)
-        if not product:
-            raise HTTPException(status_code=404, detail="Product not found")
-        if product["stock"] < item["quantity"]:
-            raise HTTPException(status_code=400, detail="Insufficient stock")
-
-        product["stock"] -= item["quantity"]
-        total += product["price"] * item["quantity"]
-        order_items.append({
-            "product_id": product["id"],
-            "name": product["name"],
-            "price": product["price"],
-            "quantity": item["quantity"]
-        })
-
-    order = {
-        "id": order_id_seq,
-        "user_id": current_user.id,
-        "total_amount": total,
-        "status": "paid",
-        "created_at": datetime.now(),
-        "items": order_items,
-        "shipping": shipping,
-        "payment_method": payment_method
-    }
-    order_id_seq += 1
-    mock_orders.append(order)
-
-    return order
+    # 這裡應該在資料庫中創建訂單，而不是使用 mock 資料
+    # TODO: 實作在資料庫中創建訂單的邏輯
+    raise HTTPException(status_code=501, detail="Order creation not yet implemented")
 
 
 
