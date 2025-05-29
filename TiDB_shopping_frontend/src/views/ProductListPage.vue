@@ -194,7 +194,7 @@ const fetchProducts = async () => {
       name: p.name,
       description: p.description || '',
       price: p.price,
-      stock: p.sold, 
+      stock: p.stock, // *** 修復：使用正確的庫存欄位 p.stock 而非 p.sold ***
       // imageUrl: p.image_url, // *** 將後端的 'image_url' 映射到前端的 'imageUrl' ***
       imageUrl: productImageMap[p.name] ?? p.image_url ?? '',
       category: p.category_name, 
