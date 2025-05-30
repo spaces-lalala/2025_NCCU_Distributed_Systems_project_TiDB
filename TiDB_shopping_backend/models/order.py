@@ -1,17 +1,7 @@
-from sqlalchemy import Column, String, Integer, Float, ForeignKey, DateTime
+from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Integer
 from sqlalchemy.orm import relationship
-from database import Base
 from datetime import datetime
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(String(64), primary_key=True, index=True)
-    name = Column(String(64))
-    email = Column(String(128), unique=True, index=True)
-    password = Column(String(128))
-
-    orders = relationship("Order", back_populates="user")
+from database import Base
 
 class Order(Base):
     __tablename__ = "orders"
@@ -24,6 +14,7 @@ class Order(Base):
     user_id = Column(String(64), ForeignKey("users.id"))
 
     user = relationship("User", back_populates="orders")
+    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
 
 class Category(Base):
     __tablename__ = "categories"

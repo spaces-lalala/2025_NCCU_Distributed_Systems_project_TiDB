@@ -14,7 +14,7 @@ node_modules/
 dist/
 dist-ssr/
 .vite/ # Standard Vite cache directory (Vite 3+)
-# .vite-cache/ # If you specifically have this from an older setup or custom config, you can keep it too.
+# .vite-cache/ # If you specifically have this from an older setup or custom config
 
 # TypeScript build info
 *.tsbuildinfo
@@ -25,11 +25,24 @@ dist-ssr/
 !.env.example
 !.env.template
 
-# Backend virtual environment (if mistakenly placed in frontend, otherwise should be in backend's .gitignore)
+# Backend virtual environment (if mistakenly placed in frontend)
 backend_venv/
 
-# Misc
-# *.local # Usually for specific local override files, ensure this is intended.
+# Testing
+coverage/
+.nyc_output/
+.coverage
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*.backup
 
 # Editor directories and files
 .vscode/*
@@ -37,11 +50,51 @@ backend_venv/
 !.vscode/settings.json # Allow sharing workspace settings
 .idea/
 *.sw?
+.history/
 
 # OS generated files
 .DS_Store
 Thumbs.db
 ehthumbs.db
+.Spotlight-V100
+.Trashes
+._*
+*.lnk
+
+# Package manager lock files (choose what to keep)
+# yarn.lock
+# pnpm-lock.yaml
+# Keep package-lock.json for reproducible builds
+
+# ESLint cache
+.eslintcache
+
+# Stylelint cache
+.stylelintcache
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
 
 # Compiled output
 # *.com

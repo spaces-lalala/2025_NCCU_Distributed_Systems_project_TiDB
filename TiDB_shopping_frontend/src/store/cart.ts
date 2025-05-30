@@ -45,11 +45,44 @@ export const useCartStore = defineStore('cart', {
       return state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
     },
     isEmpty: (state): boolean => state.items.length === 0,
-  },
-  actions: {
+  },  actions: {
     _saveCartToLocalStorage() {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(this.items));
     },
+      // 新增：檢查單個商品的庫存
+    async checkProductStock(productId: string | number): Promise<number | null> {
+      try {
+        const response = await fetch(`/api/products/${productId}`);
+        if (!response.ok) throw new Error('庫存檢查失敗');
+        const data = await response.json();
+        return data.stock;
+      } catch (error) {
+        console.error('庫存檢查失敗：', error);
+        return null;
+      }
+    },
+
+    // 新增：驗證整個購物車的庫存
+    async validateCartStock(): Promise<{ valid: boolean; issues: string[] }> {
+      const issues: string[] = [];
+      
+      for (const item of this.items) {
+        const currentStock = await this.checkProductStock(item.id);
+        if (currentStock === null) {
+          issues.push(`無法驗證商品 "${item.name}" 的庫存`);
+          continue;
+        }
+        
+        if (currentStock <= 0) {
+          issues.push(`商品 "${item.name}" 已售完`);
+        } else if (item.quantity > currentStock) {
+          issues.push(`商品 "${item.name}" 庫存不足，目前僅剩 ${currentStock} 件`);
+        }
+      }
+      
+      return { valid: issues.length === 0, issues };
+    },
+
     addItem(product: Product, quantityToAdd: number = 1) {
       if (quantityToAdd <= 0) return;
 
@@ -63,22 +96,32 @@ export const useCartStore = defineStore('cart', {
       }
       this._saveCartToLocalStorage();
     },
-    updateItemQuantity(productId: string, newQuantity: number) {
-      if (newQuantity < 0) return;
-      const itemIndex = this.items.findIndex(item => item.id === productId);
+      async updateItemQuantity(productId: string | number, newQuantity: number): Promise<boolean> {
+      if (newQuantity < 0) return false;
+      
+      const itemIndex = this.items.findIndex(item => item.id == productId); // 使用 == 來比較不同類型
+      if (itemIndex === -1) return false;
 
-      if (itemIndex !== -1) {
-        // Optionally, check newQuantity against this.items[itemIndex].stock
-        if (newQuantity === 0) {
-          this.items.splice(itemIndex, 1); // Remove item if quantity is 0
-        } else {
-          this.items[itemIndex].quantity = newQuantity;
-        }
-        this._saveCartToLocalStorage();
+      // 檢查庫存
+      const currentStock = await this.checkProductStock(productId);
+      if (currentStock === null) return false;
+      
+      if (newQuantity > currentStock) {
+        // 庫存不足，不更新數量
+        return false;
       }
+
+      if (newQuantity === 0) {
+        this.items.splice(itemIndex, 1); // Remove item if quantity is 0
+      } else {
+        this.items[itemIndex].quantity = newQuantity;
+      }
+      this._saveCartToLocalStorage();
+      return true;
     },
-    removeItem(productId: string) {
-      this.items = this.items.filter(item => item.id !== productId);
+    
+    removeItem(productId: string | number) {
+      this.items = this.items.filter(item => item.id != productId); // 使用 != 來比較不同類型
       this._saveCartToLocalStorage();
     },
     clearCart() {

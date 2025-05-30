@@ -34,9 +34,18 @@ apiClient.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           // Handle unauthorized access, e.g., redirect to login
-          // useAuthStore().logout(); // If using Pinia and auth store is accessible here
-          // window.location.href = '/login';
           console.error('Unauthorized access - 401', error.response);
+          
+          // 清除過期的認證資訊
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('authUser');
+          
+          // 顯示友善的錯誤訊息
+          if (window.location.pathname !== '/login') {
+            // 避免在登入頁面重複重定向
+            alert('您的登入已過期，請重新登入');
+            window.location.href = '/login';
+          }
           break;
         case 403:
           console.error('Forbidden - 403', error.response);

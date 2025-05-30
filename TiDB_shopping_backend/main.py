@@ -7,21 +7,21 @@ import uuid # For generating a mock user ID
 import time # For generating a mock token (very basic)
 from datetime import datetime # For order date
 from database import engine, SessionLocal, get_db
-from models import Base, User, Product, Category
+from database import Base
+from api import orders, payments, product
+from models import order_item, order, User, Product, Category
+from api import items
+from dependencies.auth import get_current_user_id
 from sqlalchemy.orm import Session
-from utils import hash_password
-import uuid
-from utils import verify_password, hash_password
+from utils import hash_password, verify_password
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 
-
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(redirect_slashes=False)
 # ------------------------------
 # 🔧 CORS 中介層設定
 # 這段設定允許前端從不同的網域（如 http://localhost:3000）存取後端 API。
@@ -30,12 +30,16 @@ app = FastAPI()
 # ------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5002"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+app.include_router(orders.router)
+#app.include_router(users.router)
+app.include_router(product.router)
+app.include_router(payments.router)
+app.include_router(items.router)
 # --- Pydantic Models ---
 
 class UserRegistrationRequest(BaseModel):
@@ -124,8 +128,6 @@ SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
-
 def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None):
     to_encode = {"sub": user_id}
     if expires_delta:
@@ -134,22 +136,6 @@ def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None)
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> str:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            raise credentials_exception
-        return user_id
-    except JWTError:
-        raise credentials_exception
 
 # 添加缺失的 ProductOut 和 OrderOut 類別
 
@@ -180,17 +166,14 @@ class ProductDetailOut(ProductOut):
     
 class ErrorDetail(BaseModel):
     detail: str
-# 添加缺失的 get_db 函數
-from sqlalchemy.orm import Session
 
+# 添加缺失的 get_db 函數
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-
-# --- Mock API Endpoints ---
 
 @app.post("/api/auth/register", response_model=AuthSuccessResponse, status_code=status.HTTP_201_CREATED)
 def register_user(
@@ -309,162 +292,12 @@ def update_user_profile(
     return UserProfile(username=user.name)
 
 
-# --------- Products Router  ----------
-from products import mock_categories, mock_products
-@app.get("/api/products", response_model=List[ProductOut])
-def get_products(
-    skip: int = 0,
-    limit: int = 10,
-    category: Optional[str] = None,
-    sort_by: Optional[str] = None,
-    db: Session = Depends(get_db)
-):
-    # products = mock_products.copy()
-    query = db.query(Product)
+# 產品相關路由已移至 api/product.py 模組
 
-    # 篩選分類
-    if category:
-        cat = db.query(Category).filter(Category.name == category).first()
-        if cat:
-            query = query.filter(Product.category_name == cat.name)
-        else:
-            return []
-
-    # 排序
-    if sort_by == "price_asc":
-        query = query.order_by(Product.price.asc())
-    elif sort_by == "price_desc":
-        query = query.order_by(Product.price.desc())
-    elif sort_by == "name_asc":
-        query = query.order_by(Product.name.asc())
-
-    products = query.offset(skip).limit(limit).all()
-    return products
-
-@app.get("/api/products/bestsellers", response_model=List[ProductOut])
-def get_bestsellers(limit: int = 5, db: Session = Depends(get_db)):
-    products = (
-        db.query(Product)
-        .order_by(Product.sold.desc())
-        .limit(limit)
-        .all()
-    )
-    return products
-
-
-@app.get("/api/products/{product_id}", response_model=ProductDetailOut, responses={404: {"model": ErrorDetail}})
-def get_product_detail(product_id: int, db: Session = Depends(get_db)):
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-    return product
-
-
-@app.get("/api/orders/", response_model=List[OrderSummaryOut]) # Frontend expects a list of orders directly
-def get_user_orders(
-    skip: int = 0,
-    limit: int = 10,
-    status: Optional[str] = None,
-    current_user: dict = Depends(get_current_user)
-):
-    orders = [o for o in mock_orders if o["user_id"] == current_user.id]
-    if status:
-        orders = [o for o in orders if o["status"] == status]
-
-    summaries = [
-        {
-            "id": o["id"],
-            "total_amount": o["total_amount"],
-            "status": o["status"],
-            "created_at": o["created_at"],
-            "item_count": sum(item["quantity"] for item in o["items"])
-        }
-        for o in orders[skip: skip + limit]
-    ]
-    return summaries
-
-@app.get("/api/orders/{order_id}", response_model=OrderOut)
-def get_order_detail(
-    order_id: int,
-    current_user: dict = Depends(get_current_user)
-):
-    order = next((o for o in mock_orders if o["id"] == order_id), None)
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
-    if order["user_id"] != current_user.id:
-        raise HTTPException(status_code=403, detail="Permission denied")
-    return order
-
-@app.post("/api/orders/", response_model=OrderOut, status_code=201)
-def create_order(
-    order_data: dict,
-    current_user: dict = Depends(get_current_user)
-):
-    global order_id_seq
-    items = order_data["items"]
-    shipping = order_data["shipping_address"]
-    payment_method = order_data["payment_method"]
-
-    order_items = []
-    total = 0
-
-    for item in items:
-        product = next((p for p in mock_products if p["id"] == item["product_id"]), None)
-        if not product:
-            raise HTTPException(status_code=404, detail="Product not found")
-        if product["stock"] < item["quantity"]:
-            raise HTTPException(status_code=400, detail="Insufficient stock")
-
-        product["stock"] -= item["quantity"]
-        total += product["price"] * item["quantity"]
-        order_items.append({
-            "product_id": product["id"],
-            "name": product["name"],
-            "price": product["price"],
-            "quantity": item["quantity"]
-        })
-
-    order = {
-        "id": order_id_seq,
-        "user_id": current_user.id,
-        "total_amount": total,
-        "status": "paid",
-        "created_at": datetime.now(),
-        "items": order_items,
-        "shipping": shipping,
-        "payment_method": payment_method
-    }
-    order_id_seq += 1
-    mock_orders.append(order)
-
-    return order
+# 訂單相關路由已移至 api/orders.py 模組
 
 
 
-# @app.get("/api/orders/{order_id}", response_model=OrderOut)
-# def get_order_detail(order_id: int, db=Depends(get_db)):
-#     """
-#     Mocks an endpoint to get order details by order ID.
-#     """
-#     print(f"模擬後端：請求訂單詳情，訂單ID: {order_id}")
-
-#     # In a real app, you would fetch the order from the database.
-#     # Here, we'll just mock an order detail response.
-#     mock_order = OrderOut(
-#         id=order_id,
-#         orderNumber="ORD-2023-00001",
-#         orderDate="2023-10-26T10:00:00Z",
-#         totalAmount=74.99,
-#         status="DELIVERED",
-#         items=[
-#             OrderItemBase(productId="prod_mock_001", productName="TiDB 官方限量版 T-Shirt", quantity=1, price=25.00),
-#             OrderItemBase(productId="prod_mock_002", productName="高效能HTAP資料庫實戰手冊", quantity=1, price=49.99),
-#         ],
-#         userId="user_user" # Mock user ID
-#     )
-
-#     print(f"模擬後端：回傳訂單詳情: {mock_order.model_dump()}")
-#     return mock_order
 
 
 

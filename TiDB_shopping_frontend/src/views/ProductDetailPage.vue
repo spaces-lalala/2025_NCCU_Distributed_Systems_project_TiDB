@@ -84,10 +84,13 @@ const fetchProductDetails = async () => {
     if (!response.ok) throw new Error('Fetch failed');
 
     const data: Product = await response.json();
+    // 調整價格：庫存小於 500 就漲價 10 元
+    const adjustedPrice = data.stock < 500 ? data.price + 10 : data.price;
 
     // 若有需要調整圖片欄位
     product.value = {
       ...data,
+      price: adjustedPrice, // 覆蓋價格
       // imageUrl: data.image_url,  // 轉換圖片欄位
       imageUrl: productImageMap[data.name] ?? data.image_url ?? '', // 優先用 map，再 fallback
     };
@@ -100,7 +103,7 @@ const fetchProductDetails = async () => {
 };
 
 
-const addToCart = () => {
+const addToCart = async () => {
   if (!product.value) return;
 
   if (quantity.value < 1) {
@@ -108,14 +111,52 @@ const addToCart = () => {
     quantity.value = 1;
     return;
   }
-  if (quantity.value > product.value.stock) {
-    ElMessage.warning('選擇的商品數量超過庫存');
-    quantity.value = product.value.stock;
-    return;
-  }
 
-  cartStore.addItem(product.value, quantity.value);
-  ElMessage.success(`${product.value.name} (x${quantity.value}) 已成功加入購物車！`);
+  // 實時檢查庫存
+  try {
+    const response = await fetch(`/api/products/${product.value.id}`);
+    if (!response.ok) throw new Error('庫存檢查失敗');
+    
+    const currentStock = await response.json();
+    const availableStock = currentStock.stock;
+
+    if (availableStock <= 0) {
+      ElMessage.error('商品已售完，無法加入購物車');
+      product.value.stock = 0; // 更新本地庫存顯示
+      return;
+    }
+
+    if (quantity.value > availableStock) {
+      ElMessage.warning(`庫存不足，目前僅剩 ${availableStock} 件`);
+      quantity.value = availableStock;
+      product.value.stock = availableStock; // 更新本地庫存顯示
+      return;
+    }
+
+    // 檢查購物車中已有的數量
+    const cartItem = cartStore.getCartItems.find(item => item.id === product.value!.id);
+    const cartQuantity = cartItem ? cartItem.quantity : 0;
+    
+    if (cartQuantity + quantity.value > availableStock) {
+      const maxAddable = availableStock - cartQuantity;
+      if (maxAddable <= 0) {
+        ElMessage.warning('您購物車中此商品的數量已達到庫存上限');
+        return;
+      }
+      ElMessage.warning(`加上購物車中的數量將超過庫存，最多還可加入 ${maxAddable} 件`);
+      quantity.value = maxAddable;
+      return;
+    }
+
+    // 更新本地商品庫存資訊
+    product.value.stock = availableStock;
+    
+    cartStore.addItem(product.value, quantity.value);
+    ElMessage.success(`${product.value.name} (x${quantity.value}) 已成功加入購物車！`);
+  } catch (error) {
+    console.error('庫存驗證失敗：', error);
+    ElMessage.error('無法驗證庫存，請稍後再試');
+  }
 };
 
 onMounted(() => {

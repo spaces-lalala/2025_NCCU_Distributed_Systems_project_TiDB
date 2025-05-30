@@ -99,7 +99,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'vue-router';
-import { ElMessage, ElForm, ElFormItem, ElInput, ElRadioGroup, ElRadio, ElButton, ElCard, ElRow, ElCol, ElDivider, ElEmpty } from 'element-plus';
+import { ElMessage, ElMessageBox, ElForm, ElFormItem, ElInput, ElRadioGroup, ElRadio, ElButton, ElCard, ElRow, ElCol, ElDivider, ElEmpty } from 'element-plus';
 import type { FormInstance, FormRules } from 'element-plus';
 import { createOrder } from '@/services/orderService';
 import type { OrderCreationPayload, Order, OrderItemForCreation } from '@/types/order';
@@ -156,32 +156,55 @@ const handleSubmitOrder = async () => {
     if (valid) {
       isSubmitting.value = true;
       try {
+        // 最終庫存驗證 - 確保在提交訂單前所有商品都有足夠庫存
+        ElMessage.info('正在進行最終庫存驗證...');
+        const validation = await cartStore.validateCartStock();
+        
+        if (!validation.valid) {
+          ElMessage.error('庫存驗證失敗，無法提交訂單');
+          ElMessageBox.alert(
+            validation.issues.join('\n'),
+            '庫存不足',
+            {
+              confirmButtonText: '返回購物車調整',
+              type: 'warning',
+            }
+          ).then(() => {
+            router.push('/cart');
+          });
+          return;
+        }
+
         const itemsForApi: OrderItemForCreation[] = cartStore.getCartItems.map(item => ({
-          productId: item.id,       // Changed from product_id, assuming item.id is productId
-          productName: item.name,   // Added, assuming item.name is productName
-          quantity: item.quantity,
-          price: item.price         // Assuming item.price is unit price
+          product_id: parseInt(item.id),  // Backend expects product_id as integer
+          quantity: item.quantity
         }));
 
         const payloadForApi: OrderCreationPayload = {
-          items: itemsForApi,
-          totalAmount: grandTotal.value, // Changed from total_amount
-        };
+          items: itemsForApi
+        };        const createdOrder: Order = await createOrder(payloadForApi);
 
-        const createdOrder: Order = await createOrder(payloadForApi);
-
-        ElMessage.success(`訂單已成功提交！訂單編號: ${createdOrder.orderNumber}`);
+        ElMessage.success(`訂單已成功提交！訂單編號: ${createdOrder.order_number}`);
         cartStore.clearCart();
         router.push({
           name: 'OrderConfirmation',
           params: { 
             orderId: createdOrder.id,
-            orderNumber: createdOrder.orderNumber
+            orderNumber: createdOrder.order_number
           }
         });
 
       } catch (error: any) {
-        ElMessage.error(error.message || '訂單提交失敗，請稍後再試。');
+        // 特別處理認證錯誤
+        if (error.message && error.message.includes('Could not validate credentials')) {
+          ElMessage.error('登入已過期，請重新登入後再試');
+          // 清除認證資訊並重定向到登入頁面
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('authUser');
+          router.push('/login');
+        } else {
+          ElMessage.error(error.message || '訂單提交失敗，請稍後再試。');
+        }
         console.error('Order submission error:', error);
       } finally {
         isSubmitting.value = false;

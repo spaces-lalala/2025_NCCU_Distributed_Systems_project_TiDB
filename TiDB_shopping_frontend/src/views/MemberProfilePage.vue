@@ -24,13 +24,12 @@
         </div>
         <div v-else-if="fetchOrdersError" class="orders-error">
           <el-alert :title="fetchOrdersError" type="error" show-icon :closable="false"></el-alert>
-        </div>
-        <div v-else-if="orders.length > 0" class="order-history-list">
+        </div>        <div v-else-if="orders.length > 0" class="order-history-list">
           <el-table :data="orders" style="width: 100%" stripe border>
-            <el-table-column prop="orderNumber" label="訂單編號" width="180" sortable />
-            <el-table-column prop="orderDate" label="訂單日期" width="180" sortable>
+            <el-table-column prop="order_number" label="訂單編號" width="180" sortable />
+            <el-table-column prop="order_date" label="訂單日期" width="180" sortable>
               <template #default="{ row }">
-                {{ new Date(row.orderDate).toLocaleDateString() }}
+                {{ new Date(row.order_date).toLocaleDateString() }}
               </template>
             </el-table-column>
             <el-table-column label="訂單狀態" width="120" align="center">
@@ -38,9 +37,9 @@
                 <el-tag :type="getStatusTagType(row.status)">{{ row.status }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="totalAmount" label="總金額" align="right">
+            <el-table-column prop="total_amount" label="總金額" align="right">
               <template #default="{ row }">
-                NT$ {{ row.totalAmount.toFixed(2) }}
+                NT$ {{ row.total_amount ? row.total_amount.toFixed(2) : '0.00' }}
               </template>
             </el-table-column>
             <el-table-column label="操作" width="120" align="center">

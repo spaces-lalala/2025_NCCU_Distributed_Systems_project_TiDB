@@ -1,38 +1,16 @@
-import axios from 'axios';
+import apiClient from './axiosInstance'; // 使用配置好的 axios 實例
 import type { Order, OrderCreationPayload, OrderCreationResponse } from '@/types/order';
-import { useAuthStore } from '@/store/auth';
-
-const API_BASE_URL = '/api';
-
-// Helper to get the auth token and set headers
-const getAuthHeaders = () => {
-  const authStore = useAuthStore(); // Correct way to get Pinia store instance
-  const token = authStore.token;
-  if (!token) {
-    console.error('Auth token is not available for order service.');
-    throw new Error('AUTH_TOKEN_MISSING'); 
-  }
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-};
 
 /**
  * Fetches the order history for the authenticated user.
  * @returns {Promise<Order[]>} A promise that resolves with an array of orders.
- * @throws Will throw an error if the request fails or if the auth token is missing.
+ * @throws Will throw an error if the request fails or if authentication fails.
  */
 export const getOrders = async (): Promise<Order[]> => {
   try {
-    const headers = getAuthHeaders();
-    const response = await axios.get<Order[]>(`${API_BASE_URL}/orders`, { headers });
+    const response = await apiClient.get<Order[]>('/orders');
     return response.data;
   } catch (error: any) {
-    if (error.message === 'AUTH_TOKEN_MISSING') {
-      console.error('Get orders failed: Authentication token is missing.');
-      throw new Error('使用者未登入或 Token 無效，無法獲取訂單。');
-    }
     const detail = error.response?.data?.detail || error.response?.data?.message || error.message || '伺服器錯誤';
     console.error('獲取訂單歷史失敗:', detail);
     throw new Error(`獲取訂單歷史時發生錯誤: ${detail}`);
@@ -43,21 +21,15 @@ export const getOrders = async (): Promise<Order[]> => {
  * Creates a new order.
  * @param {OrderCreationPayload} orderData - The payload for creating the order.
  * @returns {Promise<OrderCreationResponse>} A promise that resolves with the newly created order.
- * @throws Will throw an error if the request fails or if the auth token is missing.
+ * @throws Will throw an error if the request fails or if authentication fails.
  */
 export const createOrder = async (orderData: OrderCreationPayload): Promise<OrderCreationResponse> => {
   try {
-    const headers = getAuthHeaders();
-    const response = await axios.post<OrderCreationResponse>(`${API_BASE_URL}/orders`, orderData, { headers });
+    const response = await apiClient.post<OrderCreationResponse>('/orders', orderData);
     return response.data;
   } catch (error: any) {
-    if (error.message === 'AUTH_TOKEN_MISSING') {
-      console.error('Create order failed: Authentication token is missing.');
-      throw new Error('使用者未登入或 Token 無效，無法建立訂單。');
-    }
-
     let errorMessage = '建立訂單時發生未知錯誤';
-    if (axios.isAxiosError(error) && error.response) {
+    if (error.response) {
       console.error('建立訂單 API 錯誤:', error.response.status, error.response.data);
       if (error.response.status === 422 && error.response.data && error.response.data.detail) {
         // Format Pydantic validation errors
@@ -91,4 +63,4 @@ export const createOrder = async (orderData: OrderCreationPayload): Promise<Orde
     }
     throw new Error(errorMessage);
   }
-}; 
+};
