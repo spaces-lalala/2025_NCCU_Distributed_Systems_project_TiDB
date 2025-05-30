@@ -30,22 +30,20 @@ const loadCartFromLocalStorage = (): CartItem[] => {
 export const useCartStore = defineStore('cart', {
   state: (): CartState => ({
     items: loadCartFromLocalStorage(),
-  }),
-  getters: {
+  }),  getters: {
     // Getter to access all cart items
     getCartItems: (state): CartItem[] => state.items,
     // Getter for the total number of unique items in the cart
     // cartUniqueItemCount: (state) => state.items.length,
     // Getter for the total quantity of all items in the cart
-    totalItemQuantity: (state): number => {
+    getTotalItemQuantity: (state): number => {
       return state.items.reduce((total, item) => total + item.quantity, 0);
-    },
-    // Getter for the total price of all items in the cart
-    totalPrice: (state): number => {
-      return state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    },    // Getter for the total price of all items in the cart
+    getTotalPrice: (state): number => {
+      return state.items.reduce((total, item) => total + ((item.price || 0) * item.quantity), 0);
     },
     isEmpty: (state): boolean => state.items.length === 0,
-  },  actions: {
+  },actions: {
     _saveCartToLocalStorage() {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(this.items));
     },
@@ -81,20 +79,51 @@ export const useCartStore = defineStore('cart', {
       }
       
       return { valid: issues.length === 0, issues };
-    },
+    },    async addItem(product: Product, quantityToAdd: number = 1): Promise<{ success: boolean; message: string }> {
+      if (quantityToAdd <= 0) {
+        return { success: false, message: '加入數量必須大於 0' };
+      }
 
-    addItem(product: Product, quantityToAdd: number = 1) {
-      if (quantityToAdd <= 0) return;
+      // 檢查商品實時庫存
+      const currentStock = await this.checkProductStock(product.id);
+      if (currentStock === null) {
+        return { success: false, message: '無法驗證商品庫存，請稍後再試' };
+      }
+
+      if (currentStock <= 0) {
+        return { success: false, message: '商品已售完' };
+      }
 
       const existingItem = this.items.find(item => item.id === product.id);
+      const currentCartQuantity = existingItem ? existingItem.quantity : 0;
+      const totalQuantityAfterAdd = currentCartQuantity + quantityToAdd;
+
+      if (totalQuantityAfterAdd > currentStock) {
+        const maxAddable = currentStock - currentCartQuantity;
+        if (maxAddable <= 0) {
+          return { 
+            success: false, 
+            message: '您購物車中此商品的數量已達到庫存上限' 
+          };
+        }
+        return { 
+          success: false, 
+          message: `庫存不足，最多還可加入 ${maxAddable} 件` 
+        };
+      }
+
+      // 執行加入購物車
       if (existingItem) {
-        // Optionally, check against product.stock before adding
         existingItem.quantity += quantityToAdd;
       } else {
-        // Optionally, check if quantityToAdd > product.stock
         this.items.push({ ...product, quantity: quantityToAdd });
       }
+      
       this._saveCartToLocalStorage();
+      return { 
+        success: true, 
+        message: `${product.name} (x${quantityToAdd}) 已成功加入購物車！` 
+      };
     },
       async updateItemQuantity(productId: string | number, newQuantity: number): Promise<boolean> {
       if (newQuantity < 0) return false;

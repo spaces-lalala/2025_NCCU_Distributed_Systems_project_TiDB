@@ -1,54 +1,65 @@
 <template>
   <div class="best-sellers-page">
-    <el-container>
-      <el-main>        <div class="page-header">
-          <h1>🔥 熱銷排行榜</h1>
-          <div class="htap-showcase">
-            <div class="htap-badge">
-              <i class="el-icon-lightning"></i>
-              <span>TiDB HTAP 即時分析</span>
-            </div>            <p class="htap-description">
-              💡 <strong>真正的 HTAP 演示：</strong>此排行榜完全不依賴預計算的 sold 欄位，
-              而是直接從最新的訂單交易數據即時計算真實銷量。每當有新訂單產生，
-              排行榜立即反映最新結果，展現了 TiDB 混合事務分析處理（HTAP）的強大即時分析能力。
-              <br><br>
-              🎯 <strong>純淨體驗：</strong>我們不顯示可能不一致的銷售數字，專注於為您提供最準確的熱銷排行。
-            </p>
-          </div>
-          <p>看看大家都在買什麼！</p>
+    <!-- Page Header -->
+    <section class="page-header">
+      <h1 class="page-title">🔥 熱銷排行榜</h1>
+      
+      <!-- HTAP Showcase -->
+      <div class="htap-showcase">
+        <div class="htap-badge">
+          <i class="el-icon-lightning"></i>
+          <span>TiDB HTAP 即時分析</span>
         </div>
-
-        <div v-if="isLoading" class="loading-section">
-          <el-skeleton :rows="5" animated />
-        </div>
-
-        <div v-else-if="error" class="error-section">
-          <el-alert :title="error" type="error" show-icon :closable="false"></el-alert>
-        </div>        <div v-else-if="bestSellers.length > 0" class="results-section">
-          <!-- HTAP 分析結果顯示 -->
-          <div v-if="htapAnalysisInfo" class="htap-result">
-            <i class="el-icon-success"></i>
-            <span>{{ htapAnalysisInfo }}</span>
-          </div>
-          
-          <div class="products-grid">
-            <product-card 
-              v-for="(product, index) in bestSellers.slice(0, 3)" 
-              :key="product.id" 
-              :product="product"
-            >
-            <template #default>
-              <div class="rank-badge">第 {{ index + 1 }} 名</div>
-            </template>
-          </product-card>
+        <div class="htap-description">
+          <p>
+            <strong>真正的 HTAP 演示：</strong>此排行榜完全不依賴預計算的 sold 欄位，
+            而是直接從最新的訂單交易數據即時計算真實銷量。每當有新訂單產生，
+            排行榜立即反映最新結果，展現了 TiDB 混合事務分析處理（HTAP）的強大即時分析能力。
+          </p>
+          <p>
+            <strong>純淨體驗：</strong>我們不顯示可能不一致的銷售數字，專注於為您提供最準確的熱銷排行。
+          </p>
         </div>
       </div>
+      
+      <p class="page-subtitle">看看大家都在買什麼！</p>
+    </section>
 
-        <div v-else class="no-products-section">
-          <el-empty description="目前暫無熱銷商品數據，敬請期待！"></el-empty>
+    <!-- Loading State -->
+    <section v-if="isLoading" class="loading-section">
+      <el-skeleton :rows="5" animated />
+    </section>
+
+    <!-- Error State -->
+    <section v-else-if="error" class="error-section">
+      <el-alert :title="error" type="error" show-icon :closable="false" />
+    </section>
+
+    <!-- Results Section -->
+    <section v-else-if="bestSellers.length > 0" class="results-section">
+      <!-- HTAP Analysis Result -->
+      <div v-if="htapAnalysisInfo" class="htap-result">
+        <i class="el-icon-success"></i>
+        <span>{{ htapAnalysisInfo }}</span>
+      </div>
+      
+      <!-- Products Grid -->
+      <div class="products-grid">
+        <div 
+          v-for="(product, index) in bestSellers.slice(0, 3)" 
+          :key="product.id" 
+          class="bestseller-card"
+        >
+          <div class="rank-badge">
+            第 {{ index + 1 }} 名
+          </div>
+          <product-card :product="product" />
         </div>
-      </el-main>
-    </el-container>
+      </div>
+    </section>    <!-- No Products -->
+    <section v-else class="no-products-section">
+      <el-empty description="目前暫無熱銷商品數據，敬請期待！" />
+    </section>
   </div>
 </template>
 
@@ -109,58 +120,77 @@ onMounted(() => {
 
 <style scoped>
 .best-sellers-page {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
 }
 
+/* Page Header */
 .page-header {
   text-align: center;
-  margin-bottom: 30px;
 }
 
-.page-header h1 {
-  font-size: 2.5em;
-  color: #303133;
-  margin-bottom: 10px;
+.page-title {
+  font-size: var(--font-size-xxxl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-lg);
 }
 
+.page-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--text-secondary);
+  margin-bottom: 0;
+}
+
+/* HTAP Showcase */
 .htap-showcase {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  padding: 20px;
-  margin: 20px 0;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-xl);
+  margin: var(--spacing-lg) 0;
   color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: var(--shadow-dark);
 }
 
 .htap-badge {
   display: inline-flex;
   align-items: center;
   background: rgba(255, 255, 255, 0.2);
-  padding: 8px 16px;
+  padding: var(--spacing-sm) var(--spacing-md);
   border-radius: 20px;
-  font-weight: bold;
-  margin-bottom: 12px;
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
   backdrop-filter: blur(10px);
+  font-size: var(--font-size-sm);
 }
 
 .htap-badge i {
-  margin-right: 8px;
+  margin-right: var(--spacing-xs);
   color: #ffd700;
 }
 
 .htap-description {
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   line-height: 1.6;
-  margin: 0;
   opacity: 0.95;
 }
 
+.htap-description p {
+  margin-bottom: var(--spacing-md);
+}
+
+.htap-description p:last-child {
+  margin-bottom: 0;
+}
+
+/* HTAP Result */
 .htap-result {
-  background: linear-gradient(90deg, #52c41a 0%, #389e0d 100%);
+  background: linear-gradient(90deg, var(--success-color) 0%, #52c41a 100%);
   color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius-base);
+  margin-bottom: var(--spacing-lg);
   display: flex;
   align-items: center;
   font-weight: 500;
@@ -168,44 +198,74 @@ onMounted(() => {
 }
 
 .htap-result i {
-  margin-right: 10px;
-  font-size: 16px;
+  margin-right: var(--spacing-sm);
+  font-size: var(--font-size-base);
 }
 
-.results-section {
-  margin-top: 20px;
-}
-
+/* Products Grid */
 .products-grid {
-  display: flex;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  justify-content: center;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-lg);
+  justify-items: center;
 }
 
-.loading-section,
-.error-section,
-.no-products-section {
-  padding: 40px 20px;
-  text-align: center;
-  margin-top: 20px;
+.bestseller-card {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
 }
-
-/* Add styles for ProductCard if it doesn't have its own encapsulating styles for grid display */
 
 .rank-badge {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  background-color: #f56c6c;
+  top: var(--spacing-sm);
+  left: var(--spacing-sm);
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
   color: white;
-  font-weight: bold;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 0.9em;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-base);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
   z-index: 10;
+  box-shadow: var(--shadow-base);
 }
 
+/* States */
+.loading-section,
+.error-section,
+.no-products-section {
+  background-color: var(--bg-color);
+  border-radius: var(--border-radius-base);
+  padding: var(--spacing-xxl);
+  text-align: center;
+  box-shadow: var(--shadow-light);
+}
+
+/* 響應式設計 */
+@media (max-width: 1024px) {
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .page-title {
+    font-size: var(--font-size-xxl);
+  }
+  
+  .htap-showcase {
+    padding: var(--spacing-lg);
+    margin-left: calc(-1 * var(--spacing-lg));
+    margin-right: calc(-1 * var(--spacing-lg));
+    border-radius: 0;
+  }
+  
+  .products-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+    .bestseller-card {
+    max-width: 100%;
+  }
+}
 </style>

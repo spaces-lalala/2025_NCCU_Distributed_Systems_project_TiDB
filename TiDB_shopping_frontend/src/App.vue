@@ -7,7 +7,9 @@ import AppFooter from './components/layout/AppFooter.vue';
   <el-container direction="vertical" class="app-layout">
     <AppNavbar />
     <el-main class="app-main-content">
-      <router-view />
+      <div class="page-container">
+        <router-view />
+      </div>
     </el-main>
     <AppFooter />
   </el-container>
@@ -15,29 +17,21 @@ import AppFooter from './components/layout/AppFooter.vue';
 
 <style scoped>
 .app-layout {
-  min-height: 100vh; /* Ensure layout takes at least full viewport height */
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: var(--bg-page);
 }
 
 .app-main-content {
-  flex-grow: 1; /* Allow main content to take available space */
-  padding: 20px; /* Add some padding around the main content area */
-}
-</style>
-
-<style>
-/* Global styles or resets can go here if not in a separate CSS file like style.css */
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-    'Noto Color Emoji';
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  flex-grow: 1;
+  padding: var(--spacing-lg) 0;
+  background-color: var(--bg-page);
 }
 
-#app {
-  /* Ensure #app itself doesn't interfere with full height layout if it has styles */
+.page-container {
+  max-width: var(--container-xl);
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
 }
 </style>

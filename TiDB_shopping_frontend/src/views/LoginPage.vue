@@ -1,27 +1,58 @@
 <template>
   <div class="login-page">
-    <h2>使用者登入</h2>
-    <el-form
-      ref="loginFormRef"
-      :model="loginForm"
-      :rules="loginRules"
-      label-width="100px"
-      class="login-form"
-      @submit.prevent="submitForm"
-    >
-      <el-form-item label="Email" prop="email">
-        <el-input v-model="loginForm.email" type="email" placeholder="請輸入 Email" />
-      </el-form-item>
-      <el-form-item label="密碼" prop="password">
-        <el-input v-model="loginForm.password" type="password" placeholder="請輸入密碼" show-password />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" native-type="submit" :loading="isLoading" class="login-button">登入</el-button>
-      </el-form-item>
-    </el-form>
-    <div class="links">
-      <router-link to="/register">還沒有帳號？前往註冊</router-link>
-      <!-- Add link to password reset if needed later -->
+    <div class="login-container">
+      <div class="login-header">
+        <h2 class="login-title">使用者登入</h2>
+        <p class="login-subtitle">歡迎回來！請登入您的帳號</p>
+      </div>
+      
+      <el-form
+        ref="loginFormRef"
+        :model="loginForm"
+        :rules="loginRules"
+        label-width="0"
+        class="login-form"
+        @submit.prevent="submitForm"
+      >
+        <el-form-item prop="email">
+          <el-input 
+            v-model="loginForm.email" 
+            type="email" 
+            placeholder="請輸入 Email"
+            size="large"
+            prefix-icon="Message"
+          />
+        </el-form-item>
+        
+        <el-form-item prop="password">
+          <el-input 
+            v-model="loginForm.password" 
+            type="password" 
+            placeholder="請輸入密碼" 
+            show-password
+            size="large"
+            prefix-icon="Lock"
+          />
+        </el-form-item>
+        
+        <el-form-item>
+          <el-button 
+            type="primary" 
+            native-type="submit" 
+            :loading="isLoading" 
+            class="login-button"
+            size="large"
+          >
+            登入
+          </el-button>
+        </el-form-item>
+      </el-form>
+      
+      <div class="login-footer">
+        <router-link to="/register" class="register-link">
+          還沒有帳號？立即註冊
+        </router-link>
+      </div>
     </div>
   </div>
 </template>
@@ -91,44 +122,96 @@ const submitForm = async () => {
 
 <style scoped>
 .login-page {
+  min-height: 60vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  min-height: calc(100vh - 120px); /* Adjust based on header/footer height */
+  padding: var(--spacing-lg);
+}
+
+.login-container {
+  width: 100%;
+  max-width: 420px;
+  background-color: var(--bg-color);
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--shadow-dark);
+  padding: var(--spacing-xxl);
+  border: 1px solid var(--border-lighter);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.login-title {
+  font-size: var(--font-size-xxl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.login-subtitle {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  margin-bottom: 0;
 }
 
 .login-form {
-  width: 100%;
-  max-width: 360px;
-  padding: 30px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-bottom: var(--spacing-lg);
 }
 
-h2 {
-  margin-bottom: 20px;
-  text-align: center;
-  color: #333;
+.login-form .el-form-item {
+  margin-bottom: var(--spacing-lg);
+}
+
+.login-form .el-input {
+  border-radius: var(--border-radius-base);
 }
 
 .login-button {
   width: 100%;
+  height: 48px;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  border-radius: var(--border-radius-base);
 }
 
-.links {
-  margin-top: 20px;
+.login-footer {
   text-align: center;
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-extra-light);
 }
 
-.links a {
-  color: var(--el-color-primary);
+.register-link {
+  color: var(--primary-color);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
   text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-.links a:hover {
+.register-link:hover {
+  color: var(--primary-dark);
   text-decoration: underline;
 }
-</style> 
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .login-page {
+    padding: var(--spacing-md);
+    align-items: flex-start;
+    padding-top: var(--spacing-xxl);
+  }
+  
+  .login-container {
+    max-width: 100%;
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-light);
+  }
+  
+  .login-title {
+    font-size: var(--font-size-xl);
+  }
+}
+</style>

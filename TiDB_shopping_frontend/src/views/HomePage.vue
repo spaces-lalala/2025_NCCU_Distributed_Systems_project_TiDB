@@ -1,53 +1,68 @@
 <template>
-  <el-container direction="vertical" class="home-page">
-    <!-- Section 1: Hero Section / Carousel -->
-    <el-row class="hero-section" justify="center" align="middle">
-      <el-col :span="24">
-        <!-- Placeholder for Carousel or a prominent Hero Image/Text -->
-        <div class="hero-content">
-          <h2>探索最新商品</h2>
-          <p>發現為您精心挑選的優質產品</p>
-          <router-link to="/products">
-          <el-button type="primary" size="large">立即選購</el-button>
-          </router-link>
+  <div class="home-page">
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-content">
+        <h1 class="hero-title">探索最新商品</h1>
+        <p class="hero-description">發現為您精心挑選的優質產品</p>
+        <router-link to="/products">
+          <el-button type="primary" size="large" class="cta-button">
+            立即選購
+          </el-button>
+        </router-link>
+      </div>
+    </section>
+
+    <!-- Featured Products Section -->
+    <section class="featured-section">
+      <div class="section-header">
+        <h2 class="section-title">熱門推薦</h2>
+        <p class="section-description">精選高品質商品</p>
+      </div>
+      
+      <div class="products-grid grid-3">
+        <div 
+          v-for="product in featuredProducts.slice(0, 3)" 
+          :key="product.id" 
+          class="product-card"
+        >
+          <div class="product-image-container">
+            <img 
+              :src="product.imageUrl" 
+              class="product-image" 
+              :alt="product.name"
+            />
+          </div>
+          <div class="product-info">
+            <h4 class="product-name">{{ product.name }}</h4>
+            <p class="product-description">{{ product.description }}</p>
+            <div class="product-price">NT$ {{ (product.price || 0).toFixed(2) }}</div>
+            <router-link :to="`/product/${product.id}`">
+              <el-button type="primary" plain class="product-button">
+                查看詳情
+              </el-button>
+            </router-link>
+          </div>
         </div>
-      </el-col>
-    </el-row>
+      </div>
+    </section>
 
-    <!-- Section 2: Featured Products -->
-    <el-row class="featured-products-section" justify="center">
-      <el-col :span="22">
-        <h3 class="section-title">熱門推薦</h3>
-        <el-row :gutter="20">
-          <!-- Loop for 3 Product Cards -->
-          <el-col :xs="24" :sm="12" :md="8" v-for="product in featuredProducts.slice(0, 3)" :key="product.id" style="margin-bottom: 20px;">
-            <!-- Placeholder for ProductCard component -->
-            <el-card shadow="hover">
-              <img :src="product.imageUrl" class="product-image" :alt="product.name" />
-              <h4>{{ product.name }}</h4>
-              <p>{{ product.description }}</p>
-              <div class="product-price">NT$ {{ product.price.toFixed(2) }}</div>
-              <router-link :to="`/product/${product.id}`">
-              <el-button type="primary" plain>查看詳情</el-button>
-              </router-link>
-            </el-card>
-          </el-col>
-        </el-row>
-      </el-col>
-    </el-row>
-
-    <!-- Section 3: Bestseller Teaser -->
-    <el-row class="bestseller-teaser-section" justify="center" align="middle">
-      <el-col :span="18" style="text-align: center;">
-        <h3 class="section-title">熱銷排行榜</h3>
-        <p>看看大家都在買什麼！</p>
-        <el-button type="success" size="large" @click="goToBestSellers">
+    <!-- Bestseller Teaser Section -->
+    <section class="bestseller-section">
+      <div class="bestseller-content">
+        <h2 class="section-title">熱銷排行榜</h2>
+        <p class="section-description">看看大家都在買什麼！</p>
+        <el-button 
+          type="success" 
+          size="large" 
+          @click="goToBestSellers"
+          class="cta-button"
+        >
           查看完整榜單
         </el-button>
-      </el-col>
-    </el-row>
-
-  </el-container>
+      </div>
+    </section>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -110,91 +125,200 @@ const goToBestSellers = () => {
 
 <style scoped>
 .home-page {
-  /* Add overall padding or constraints if needed */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxl);
 }
 
+/* Hero Section */
 .hero-section {
-  background-color: #f4f6f8; /* Light, neutral background */
-  padding: 60px 20px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: var(--spacing-xxl) var(--spacing-lg);
+  border-radius: var(--border-radius-large);
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: var(--spacing-lg);
 }
 
-.hero-content h2 {
-  font-size: 2.5rem;
-  color: #333;
-  margin-bottom: 15px;
+.hero-content {
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-.hero-content p {
-  font-size: 1.2rem;
-  color: #666;
-  margin-bottom: 30px;
+.hero-title {
+  font-size: var(--font-size-xxxl);
+  font-weight: 700;
+  margin-bottom: var(--spacing-md);
+  color: white;
 }
 
-.featured-products-section {
-  padding: 0 20px; /* Horizontal padding for the section */
-  margin-bottom: 40px;
+.hero-description {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-xl);
+  opacity: 0.9;
+  color: white;
 }
 
-.section-title {
-  text-align: center;
-  font-size: 1.8rem;
-  color: #444;
-  margin-bottom: 30px;
+.cta-button {
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--font-size-base);
   font-weight: 600;
 }
 
-.el-card {
-  border: 1px solid #e0e0e0; /* Softer border */
-  border-radius: 8px; /* Slightly more rounded corners */
+/* Featured Section */
+.featured-section {
+  background-color: var(--bg-color);
+  padding: var(--spacing-xxl);
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--shadow-light);
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.section-title {
+  font-size: var(--font-size-xxl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.section-description {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  margin-bottom: 0;
+}
+
+/* Product Cards */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-lg);
+}
+
+.product-card {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-lighter);
+  border-radius: var(--border-radius-base);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-light);
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-dark);
+}
+
+.product-image-container {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
 }
 
 .product-image {
   width: 100%;
-  height: 200px; /* Or use aspect-ratio */
+  height: 100%;
   object-fit: cover;
-  border-bottom: 1px solid #eee;
-  margin-bottom: 15px;
+  transition: transform 0.3s ease;
 }
 
-.el-card h4 {
-  font-size: 1.1rem;
-  font-weight: 500;
-  margin-bottom: 8px;
-  color: #333;
+.product-card:hover .product-image {
+  transform: scale(1.05);
 }
 
-.el-card p {
-  font-size: 0.9rem;
-  color: #777;
-  margin-bottom: 12px;
-  min-height: 3em; /* Ensure consistent height for description */
+.product-info {
+  padding: var(--spacing-lg);
+}
+
+.product-name {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+  line-height: 1.4;
+}
+
+.product-description {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .product-price {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #d32f2f; /* A common price color */
-  margin-bottom: 15px;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--danger-color);
+  margin-bottom: var(--spacing-md);
 }
 
-.bestseller-teaser-section {
-  background-color: #e8f5e9; /* A distinct, inviting background */
-  padding: 50px 20px;
-  margin-top: 20px; /* Ensure some space from the previous section */
+.product-button {
+  width: 100%;
+  font-weight: 500;
 }
 
-/* Responsive adjustments if needed */
+/* Bestseller Section */
+.bestseller-section {
+  background: linear-gradient(135deg, var(--success-color) 0%, #52c41a 100%);
+  color: white;
+  padding: var(--spacing-xxl);
+  border-radius: var(--border-radius-large);
+  text-align: center;
+}
+
+.bestseller-content .section-title,
+.bestseller-content .section-description {
+  color: white;
+}
+
+.bestseller-content .section-description {
+  opacity: 0.9;
+}
+
+/* 響應式設計 */
+@media (max-width: 1024px) {
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
-  .hero-content h2 {
-    font-size: 2rem;
+  .home-page {
+    gap: var(--spacing-lg);
   }
-  .hero-content p {
-    font-size: 1rem;
+  
+  .hero-section,
+  .featured-section,
+  .bestseller-section {
+    padding: var(--spacing-lg);
+    margin-left: calc(-1 * var(--spacing-lg));
+    margin-right: calc(-1 * var(--spacing-lg));
+    border-radius: 0;
   }
-  .section-title {
-    font-size: 1.5rem;
+  
+  .hero-title {
+    font-size: var(--font-size-xxl);
+  }
+  
+  .hero-description {
+    font-size: var(--font-size-base);
+  }
+  
+  .products-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .product-image-container {
+    height: 200px;
   }
 }
-</style> 
+</style>

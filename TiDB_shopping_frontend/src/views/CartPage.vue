@@ -1,63 +1,120 @@
 <template>
   <div class="cart-page">
-    <h1>您的購物車</h1>
+    <!-- Page Header -->
+    <section class="page-header">
+      <h1 class="page-title">購物車</h1>
+      <p class="page-subtitle">檢視您選購的商品</p>
+    </section>
 
-    <div v-if="cartStore.isEmpty" class="empty-cart-container">
-      <el-empty description="您的購物車目前是空的">
+    <!-- Empty Cart State -->
+    <section v-if="cartStore.isEmpty" class="empty-cart-section">
+      <el-empty description="您的購物車目前是空的" :image-size="120">
+        <template #description>
+          <p class="empty-description">快去挑選您喜歡的商品吧！</p>
+        </template>
         <router-link to="/products">
-          <el-button type="primary">前往購物</el-button>
+          <el-button type="primary" size="large" class="shop-button">
+            前往購物
+          </el-button>
         </router-link>
       </el-empty>
-    </div>
+    </section>
 
-    <div v-else class="cart-content">
-      <el-table :data="cartStore.getCartItems" style="width: 100%" class="cart-table">
-        <el-table-column label="商品圖片" width="120">
-          <template #default="{ row }">
-            <img :src="row.imageUrl" :alt="row.name" class="cart-item-image" />
-          </template>
-        </el-table-column>
-        <el-table-column prop="name" label="商品名稱" min-width="180"></el-table-column>
-        <el-table-column label="單價" width="120">
-          <template #default="{ row }">
-            NT$ {{ row.price.toFixed(2) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="數量" width="180">
-          <template #default="{ row }">
-            <el-input-number
-              :model-value="row.quantity"
-              @change="(currentValue) => handleQuantityChange(row.id, currentValue)"
-              :min="1"
-              :max="row.stock" 
-              size="small"
-              controls-position="right"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column label="小計" width="120">
-          <template #default="{ row }">
-            NT$ {{ (row.price * row.quantity).toFixed(2) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100">
-          <template #default="{ row }">
-            <el-button type="danger" :icon="Delete" circle plain @click="confirmRemoveItem(row.id)" />
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="cart-summary">
-        <div class="summary-actions">
-            <el-button type="danger" plain @click="confirmClearCart">清空購物車</el-button>
-        </div>
-        <div class="summary-totals">
-          <p class="total-items">總計 {{ cartStore.totalItemQuantity }} 件商品</p>
-          <p class="total-price">總金額: <span class="price-value">NT$ {{ cartStore.totalPrice.toFixed(2) }}</span></p>
-          <el-button type="primary" size="large" @click="goToCheckout" class="checkout-button">前往結帳</el-button>
+    <!-- Cart Content -->
+    <section v-else class="cart-content">
+      <!-- Cart Items -->
+      <div class="cart-items-section">
+        <div class="section-title">商品清單</div>
+        
+        <div class="cart-items-container">
+          <div 
+            v-for="item in cartStore.getCartItems" 
+            :key="item.id"
+            class="cart-item"
+          >
+            <div class="item-image">
+              <img :src="item.imageUrl" :alt="item.name" />
+            </div>
+            
+            <div class="item-info">
+              <h4 class="item-name">{{ item.name }}</h4>
+              <div class="item-price">NT$ {{ (item.price || 0).toFixed(2) }}</div>
+            </div>
+            
+            <div class="item-quantity">
+              <label class="quantity-label">數量</label>
+              <el-input-number
+                :model-value="item.quantity"
+                @change="(currentValue) => handleQuantityChange(item.id, currentValue)"
+                :min="1"
+                :max="item.stock" 
+                size="default"
+                controls-position="right"
+              />
+            </div>
+            
+            <div class="item-subtotal">
+              <div class="subtotal-label">小計</div>
+              <div class="subtotal-amount">NT$ {{ ((item.price || 0) * item.quantity).toFixed(2) }}</div>
+            </div>
+            
+            <div class="item-actions">
+              <el-button 
+                type="danger" 
+                :icon="Delete" 
+                circle 
+                plain 
+                @click="confirmRemoveItem(item.id)" 
+                class="remove-button"
+              />
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+
+      <!-- Cart Summary -->
+      <div class="cart-summary-section">
+        <div class="summary-card">
+          <div class="summary-header">
+            <h3>訂單總計</h3>
+          </div>
+          
+          <div class="summary-details">
+            <div class="summary-row">
+              <span>商品總額</span>
+              <span>NT$ {{ cartStore.getTotalPrice.toFixed(2) }}</span>
+            </div>
+            <div class="summary-row">
+              <span>運費</span>
+              <span>免費</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-row total-row">
+              <span>總計</span>
+              <span>NT$ {{ cartStore.getTotalPrice.toFixed(2) }}</span>
+            </div>
+          </div>
+          
+          <div class="summary-actions">
+            <el-button 
+              @click="clearCart" 
+              plain 
+              class="clear-button"
+            >
+              清空購物車
+            </el-button>
+            <router-link to="/checkout">
+              <el-button 
+                type="primary" 
+                size="large" 
+                class="checkout-button"
+              >
+                前往結帳
+              </el-button>
+            </router-link>
+          </div>
+        </div>
+      </div>    </section>
   </div>
 </template>
 
@@ -175,101 +232,319 @@ const goToCheckout = async () => {
 
 <style scoped>
 .cart-page {
-  max-width: 1000px;
-  margin: 20px auto;
-  padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-}
-
-h1 {
-  text-align: center;
-  margin-bottom: 30px;
-  color: #333;
-}
-
-.empty-cart-container {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 300px; /* Ensure it takes some space */
+  flex-direction: column;
+  gap: var(--spacing-xl);
 }
 
-.cart-item-image {
+/* Page Header */
+.page-header {
+  text-align: center;
+}
+
+.page-title {
+  font-size: var(--font-size-xxxl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.page-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--text-secondary);
+  margin-bottom: 0;
+}
+
+/* Empty Cart Section */
+.empty-cart-section {
+  background-color: var(--bg-color);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-xxxl);
+  text-align: center;
+  box-shadow: var(--shadow-light);
+}
+
+.empty-description {
+  font-size: var(--font-size-lg);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.shop-button {
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+/* Cart Content */
+.cart-content {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: var(--spacing-xl);
+  align-items: start;
+}
+
+/* Cart Items Section */
+.cart-items-section {
+  background-color: var(--bg-color);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-light);
+}
+
+.section-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 2px solid var(--border-lighter);
+  padding-bottom: var(--spacing-md);
+}
+
+.cart-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* Cart Item */
+.cart-item {
+  display: grid;
+  grid-template-columns: 80px 1fr auto auto auto;
+  gap: var(--spacing-lg);
+  align-items: center;
+  padding: var(--spacing-lg);
+  background-color: var(--bg-page);
+  border-radius: var(--border-radius-base);
+  border: 1px solid var(--border-lighter);
+  transition: all 0.3s ease;
+}
+
+.cart-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-base);
+}
+
+.item-image {
   width: 80px;
   height: 80px;
+  border-radius: var(--border-radius-base);
+  overflow: hidden;
+}
+
+.item-image img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 4px;
 }
 
-.cart-table {
-  margin-bottom: 30px;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
 }
 
-.cart-table .el-table__header-wrapper th {
-  background-color: #f5f7fa;
-  color: #909399;
-  font-weight: bold;
+.item-name {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
 }
 
-.cart-summary {
+.item-price {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.item-quantity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.quantity-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.item-subtotal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  align-items: center;
+  text-align: center;
+}
+
+.subtotal-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.subtotal-amount {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.item-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.remove-button {
+  padding: var(--spacing-sm);
+}
+
+/* Cart Summary Section */
+.cart-summary-section {
+  position: sticky;
+  top: var(--spacing-xl);
+}
+
+.summary-card {
+  background-color: var(--bg-color);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-base);
+  border: 1px solid var(--border-lighter);
+}
+
+.summary-header {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 2px solid var(--border-lighter);
+}
+
+.summary-header h3 {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.summary-details {
+  margin-bottom: var(--spacing-lg);
+}
+
+.summary-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start; /* Align items to the top */
-  padding: 20px;
-  background-color: #fff;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+  font-size: var(--font-size-base);
+}
+
+.summary-row span:first-child {
+  color: var(--text-secondary);
+}
+
+.summary-row span:last-child {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.summary-divider {
+  height: 1px;
+  background-color: var(--border-lighter);
+  margin: var(--spacing-md) 0;
+}
+
+.total-row {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.total-row span:last-child {
+  color: var(--primary-color);
+  font-size: var(--font-size-xl);
 }
 
 .summary-actions {
-  /* Takes available space, pushing totals to the right */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
-.summary-totals {
-  text-align: right;
-}
-
-.total-items {
-  font-size: 1em;
-  color: #606266;
-  margin-bottom: 8px;
-}
-
-.total-price {
-  font-size: 1.2em;
-  color: #303133;
-  margin-bottom: 20px;
-  font-weight: bold;
-}
-
-.total-price .price-value {
-  color: #f56c6c; /* Highlight price */
-  font-size: 1.3em;
+.clear-button,
+.checkout-button {
+  width: 100%;
+  padding: var(--spacing-md);
+  font-size: var(--font-size-base);
+  font-weight: 600;
 }
 
 .checkout-button {
-  width: 100%;
+  font-size: var(--font-size-lg);
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .cart-summary {
-    flex-direction: column-reverse; /* Stack totals above actions on small screens */
-    align-items: stretch;
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .cart-content {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
   }
-  .summary-actions {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-  }
-  .summary-totals {
-    text-align: center;
-  }
-  .checkout-button {
-    margin-top: 10px;
+  
+  .cart-summary-section {
+    position: static;
   }
 }
-</style> 
+
+@media (max-width: 768px) {
+  .cart-item {
+    grid-template-columns: 60px 1fr;
+    grid-template-rows: auto auto auto;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+  }
+  
+  .item-image {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .item-info {
+    grid-column: 2;
+  }
+  
+  .item-quantity,
+  .item-subtotal,
+  .item-actions {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+  
+  .item-quantity,
+  .item-subtotal {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .item-actions {
+    justify-content: center;
+  }
+  
+  .page-title {
+    font-size: var(--font-size-xxl);
+  }
+}
+
+@media (max-width: 576px) {
+  .page-title {
+    font-size: var(--font-size-xl);
+  }
+  
+  .cart-item {
+    padding: var(--spacing-sm);
+  }
+  
+  .summary-card {
+    padding: var(--spacing-lg);
+  }
+}
+</style>

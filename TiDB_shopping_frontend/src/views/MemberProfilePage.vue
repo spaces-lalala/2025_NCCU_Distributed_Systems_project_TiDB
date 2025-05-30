@@ -26,25 +26,30 @@
           <el-alert :title="fetchOrdersError" type="error" show-icon :closable="false"></el-alert>
         </div>        <div v-else-if="orders.length > 0" class="order-history-list">
           <el-table :data="orders" style="width: 100%" stripe border>
-            <el-table-column prop="order_number" label="訂單編號" width="180" sortable />
-            <el-table-column prop="order_date" label="訂單日期" width="180" sortable>
+            <el-table-column prop="order_number" label="訂單編號" min-width="140" sortable show-overflow-tooltip />
+            <el-table-column prop="order_date" label="訂單日期" min-width="120" sortable align="center">
               <template #default="{ row }">
                 {{ new Date(row.order_date).toLocaleDateString() }}
               </template>
             </el-table-column>
-            <el-table-column label="訂單狀態" width="120" align="center">
+            <el-table-column label="訂單狀態" min-width="100" align="center">
               <template #default="{ row }">
-                <el-tag :type="getStatusTagType(row.status)">{{ row.status }}</el-tag>
+                <el-tag :type="getStatusTagType(row.status)" size="small">{{ row.status }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="total_amount" label="總金額" align="right">
+            <el-table-column prop="total_amount" label="總金額" min-width="120" align="right">
               <template #default="{ row }">
                 NT$ {{ row.total_amount ? row.total_amount.toFixed(2) : '0.00' }}
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="120" align="center">
+            <el-table-column label="操作" min-width="100" align="center" fixed="right">
               <template #default="{ row }">
-                <el-button type="primary" size="small" @click="() => router.push({ name: 'OrderConfirmation', params: { orderId: row.id } })">
+                <el-button 
+                  type="primary" 
+                  size="small" 
+                  @click="() => router.push({ name: 'OrderConfirmation', params: { orderId: row.id } })"
+                  class="view-detail-btn"
+                >
                   查看詳情
                 </el-button>
               </template>
@@ -165,65 +170,224 @@ const handleLogout = async () => {
 
 <style scoped>
 .member-profile-page {
-  max-width: 800px;
-  margin: 20px auto;
-  padding: 20px;
+  max-width: var(--container-md);
+  margin: var(--spacing-lg) auto;
+  padding: var(--spacing-lg);
+  min-height: calc(100vh - var(--navbar-height) - var(--footer-height));
 }
 
 .profile-card {
-  border: none; 
+  border: none;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  background: var(--card-bg);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-lighter);
 }
 
 .card-header h2 {
-  margin: 0; 
-  color: #303133;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
 }
 
 .profile-content {
-  padding: 10px 0; 
+  padding: var(--spacing-lg);
 }
 
 .el-descriptions {
-  margin-bottom: 30px;
+  margin-bottom: var(--spacing-xl);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
 }
 
 .actions-section {
-  margin-top: 20px;
-  margin-bottom: 30px;
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
   text-align: left;
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  border-left: 4px solid var(--danger-color);
 }
 
 .el-divider h3 {
   margin: 0;
-  font-size: 1.2em;
-  color: #606266;
+  font-size: var(--font-size-xl);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
 .loading-orders, .orders-error {
-  padding: 20px;
+  padding: var(--spacing-lg);
   text-align: center;
-  color: #909399;
-  /* background-color: #f7f7f7; */ /* Optional: can remove if skeleton provides enough visual cue */
-  border-radius: 4px;
-  margin-top: 10px;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  margin-top: var(--spacing-md);
+  border: 1px solid var(--border-lighter);
 }
 
 .order-history-list {
-  margin-top: 15px;
+  margin-top: var(--spacing-md);
+  background: var(--card-bg);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-lighter);
 }
 
 .not-logged-in {
   text-align: center;
-  padding: 40px 20px;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  margin: var(--spacing-lg) 0;
 }
+
 .not-logged-in p {
-  margin-bottom: 20px;
-  font-size: 1.1em;
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-size-lg);
+  color: var(--text-secondary);
+  line-height: var(--line-height-relaxed);
 }
-</style> 
+
+/* Enhanced table styling */
+.order-history-list :deep(.el-table) {
+  background: transparent;
+  font-size: var(--font-size-sm);
+}
+
+.order-history-list :deep(.el-table th) {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  border-bottom: 2px solid var(--border-light);
+  padding: var(--spacing-md) var(--spacing-sm);
+}
+
+.order-history-list :deep(.el-table td) {
+  border-bottom: 1px solid var(--border-lighter);
+  padding: var(--spacing-md) var(--spacing-sm);
+  vertical-align: middle;
+}
+
+.order-history-list :deep(.el-table .el-table__row:hover) {
+  background: var(--bg-hover);
+}
+
+.order-history-list :deep(.el-button--small) {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  border-radius: var(--border-radius-sm);
+  min-width: 70px;
+}
+
+.order-history-list :deep(.el-tag--small) {
+  padding: 2px 6px;
+  font-size: var(--font-size-xs);
+  border-radius: var(--border-radius-sm);
+}
+
+.view-detail-btn {
+  white-space: nowrap;
+}
+
+/* Enhanced empty state styling */
+.order-history-list :deep(.el-empty) {
+  padding: var(--spacing-2xl);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+}
+
+.order-history-list :deep(.el-empty__description) {
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .member-profile-page {
+    margin: var(--spacing-md);
+    padding: var(--spacing-md);
+  }
+  
+  .card-header {
+    padding: var(--spacing-md);
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    text-align: center;
+  }
+  
+  .card-header h2 {
+    font-size: var(--font-size-xl);
+  }
+  
+  .profile-content {
+    padding: var(--spacing-md);
+  }
+  
+  .not-logged-in {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+  
+  .order-history-list {
+    overflow-x: auto;
+  }
+  
+  .order-history-list :deep(.el-table) {
+    min-width: 600px;
+    font-size: var(--font-size-xs);
+  }
+  
+  .order-history-list :deep(.el-table th),
+  .order-history-list :deep(.el-table td) {
+    padding: var(--spacing-sm) var(--spacing-xs);
+  }
+  
+  .order-history-list :deep(.el-button--small) {
+    padding: 4px 8px;
+    font-size: 10px;
+    min-width: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .member-profile-page {
+    margin: var(--spacing-sm);
+    padding: var(--spacing-sm);
+  }
+  
+  .card-header h2 {
+    font-size: var(--font-size-lg);
+  }
+  
+  .order-history-list :deep(.el-table) {
+    min-width: 500px;
+  }
+  
+  .order-history-list :deep(.el-table th),
+  .order-history-list :deep(.el-table td) {
+    padding: var(--spacing-xs);
+    font-size: 10px;
+  }
+  
+  .order-history-list :deep(.el-button--small) {
+    padding: 2px 6px;
+    font-size: 9px;
+    min-width: 50px;
+  }
+  
+  .order-history-list :deep(.el-tag--small) {
+    padding: 1px 4px;
+    font-size: 9px;
+  }
+}
+</style>

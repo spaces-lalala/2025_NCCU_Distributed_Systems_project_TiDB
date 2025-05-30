@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TiDB 購物網站 UI 測試檢查清單</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2 { color: #333; }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .test-item {
+            margin: 10px 0;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+        }
+        .test-item input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        .test-item label {
+            cursor: pointer;
+            flex: 1;
+        }
+        .priority {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .high { background: #ff6b6b; color: white; }
+        .medium { background: #ffa726; color: white; }
+        .low { background: #66bb6a; color: white; }
+        .url { 
+            font-family: monospace; 
+            background: #f0f0f0; 
+            padding: 2px 4px; 
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        .note {
+            font-style: italic;
+            color: #666;
+            font-size: 14px;
+        }
+        .progress {
+            margin: 20px 0;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .bug-report {
+            margin-top: 30px;
+            padding: 15px;
+            border: 2px solid #ff6b6b;
+            border-radius: 8px;
+            background: #fff5f5;
+        }
+        .bug-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border-left: 4px solid #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛒 TiDB 購物網站 UI 功能測試</h1>
+    
+    <div class="progress">
+        <span id="completed">0</span> / <span id="total">0</span> 項目完成
+        (<span id="percentage">0</span>%)
+    </div>
+
+    <h2>🎯 關鍵修復驗證</h2>
+    <div class="test-section">
+        <h3>商品詳情頁面 - 緊急修復驗證</h3>
+        <div class="test-item">
+            <input type="checkbox" id="fix-1">
+            <label for="fix-1">訪問 <span class="url">http://localhost:5002/product/1</span> 無 console 錯誤</label>
+            <span class="priority high">HIGH</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="fix-2">
+            <label for="fix-2">數量選擇器在庫存為 0 時正確禁用</label>
+            <span class="priority high">HIGH</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="fix-3">
+            <label for="fix-3">加入購物車按鈕在無庫存時顯示"已售完"</label>
+            <span class="priority high">HIGH</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="fix-4">
+            <label for="fix-4">庫存狀態顯示正確顏色（綠色/橙色/紅色）</label>
+            <span class="priority medium">MED</span>
+        </div>
+    </div>
+
+    <h2>📱 頁面功能測試</h2>
+    
+    <div class="test-section">
+        <h3>首頁 <span class="url">/</span></h3>
+        <div class="test-item">
+            <input type="checkbox" id="home-1">
+            <label for="home-1">頁面正常載入，無錯誤</label>
+            <span class="priority high">HIGH</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="home-2">
+            <label for="home-2">導航連結都能正常點擊</label>
+            <span class="priority high">HIGH</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="home-3">
+            <label for="home-3">商品卡片點擊能導航到詳情頁</label>
+            <span class="priority medium">MED</span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>商品列表 <span class="url">/products</span></h3>
+        <div class="test-item">
+            <input type="checkbox" id="list-1">
+            <label for="list-1">商品列表正常顯示</label>
+            <span class="priority high">HIGH</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="list-2">
+            <label for="list-2">商品卡片資訊完整（圖片、標題、價格）</label>
+            <span class="priority medium">MED</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="list-3">
+            <label for="list-3">點擊商品導航到詳情頁</label>
+            <span class="priority high">HIGH</span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>商品詳情 <span class="url">/product/1</span></h3>
+        <div class="test-item">
+            <input type="checkbox" id="detail-1">
+            <label for="detail-1">商品資訊完整顯示（標題、描述、價格、庫存）</label>
+            <span class="priority high">HIGH</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="detail-2">
+            <label for="detail-2">商品圖片正確載入</label>
+            <span class="priority medium">MED</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="detail-3">
+            <label for="detail-3">數量選擇器功能正常（增減、輸入）</label>
+            <span class="priority high">HIGH</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="detail-4">
+            <label for="detail-4">加入購物車功能正常</label>
+            <span class="priority high">HIGH</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="detail-5">
+            <label for="detail-5">導航欄購物車數量正確更新</label>
+            <span class="priority high">HIGH</span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>購物車 <span class="url">/cart</span></h3>
+        <div class="test-item">
+            <input type="checkbox" id="cart-1">
+            <label for="cart-1">購物車商品正確顯示</label>
+            <span class="priority high">HIGH</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="cart-2">
+            <label for="cart-2">商品數量修改功能正常</label>
+            <span class="priority high">HIGH</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="cart-3">
+            <label for="cart-3">總價計算正確</label>
+            <span class="priority high">HIGH</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="cart-4">
+            <label for="cart-4">移除商品功能正常</label>
+            <span class="priority medium">MED</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="cart-5">
+            <label for="cart-5">清空購物車功能正常</label>
+            <span class="priority low">LOW</span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>熱銷排行榜 <span class="url">/bestsellers</span></h3>
+        <div class="test-item">
+            <input type="checkbox" id="best-1">
+            <label for="best-1">頁面正常載入</label>
+            <span class="priority medium">MED</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="best-2">
+            <label for="best-2">HTAP 說明區域顯示正常</label>
+            <span class="priority medium">MED</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="best-3">
+            <label for="best-3">商品排行榜顯示正常</label>
+            <span class="priority medium">MED</span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>登入/註冊 <span class="url">/login</span> <span class="url">/register</span></h3>
+        <div class="test-item">
+            <input type="checkbox" id="auth-1">
+            <label for="auth-1">登入頁面表單正常顯示</label>
+            <span class="priority medium">MED</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="auth-2">
+            <label for="auth-2">註冊頁面表單正常顯示</label>
+            <span class="priority medium">MED</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="auth-3">
+            <label for="auth-3">表單驗證功能正常</label>
+            <span class="priority low">LOW</span>
+        </div>
+    </div>
+
+    <h2>📱 響應式設計測試</h2>
+    <div class="test-section">
+        <div class="note">請使用瀏覽器開發者工具測試不同螢幕尺寸</div>
+        <div class="test-item">
+            <input type="checkbox" id="responsive-1">
+            <label for="responsive-1">桌面版 (>1024px) 顯示正常</label>
+            <span class="priority medium">MED</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="responsive-2">
+            <label for="responsive-2">平板版 (768px-1024px) 顯示正常</label>
+            <span class="priority medium">MED</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="responsive-3">
+            <label for="responsive-3">手機版 (<768px) 顯示正常</label>
+            <span class="priority medium">MED</span>
+        </div>
+    </div>
+
+    <h2>🔍 錯誤處理測試</h2>
+    <div class="test-section">
+        <div class="test-item">
+            <input type="checkbox" id="error-1">
+            <label for="error-1">訪問不存在商品 <span class="url">/product/999</span> 顯示錯誤頁面</label>
+            <span class="priority medium">MED</span>
+        </div>
+        <div class="test-item">
+            <input type="checkbox" id="error-2">
+            <label for="error-2">網路連接錯誤時顯示適當提示</label>
+            <span class="priority low">LOW</span>
+        </div>
+    </div>
+
+    <div class="bug-report">
+        <h2>🐛 問題回報</h2>
+        <p>如果發現任何問題，請在下方記錄：</p>
+        <div id="bug-list">
+            <!-- 問題會動態添加到這裡 -->
+        </div>
+        <button onclick="addBugReport()">+ 添加問題報告</button>
+    </div>
+
+    <script>
+        // 自動計算進度
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            const checked = document.querySelectorAll('input[type="checkbox"]:checked');
+            const total = checkboxes.length;
+            const completed = checked.length;
+            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            document.getElementById('total').textContent = total;
+            document.getElementById('completed').textContent = completed;
+            document.getElementById('percentage').textContent = percentage;
+        }
+
+        // 添加問題報告
+        function addBugReport() {
+            const bugList = document.getElementById('bug-list');
+            const bugItem = document.createElement('div');
+            bugItem.className = 'bug-item';
+            bugItem.innerHTML = `
+                <strong>問題 ${bugList.children.length + 1}:</strong>
+                <textarea placeholder="描述問題..." style="width: 100%; margin-top: 5px; padding: 5px;"></textarea>
+                <small style="color: #666;">發現時間: ${new Date().toLocaleString()}</small>
+            `;
+            bugList.appendChild(bugItem);
+        }
+
+        // 綁定事件監聽器
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化進度
+            updateProgress();
+
+            // 監聽所有複選框變化
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', updateProgress);
+            });
+
+            // 保存測試狀態到 localStorage
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                // 載入保存的狀態
+                const saved = localStorage.getItem(`test-${checkbox.id}`);
+                if (saved === 'true') {
+                    checkbox.checked = true;
+                }
+
+                // 保存狀態
+                checkbox.addEventListener('change', function() {
+                    localStorage.setItem(`test-${this.id}`, this.checked);
+                });
+            });
+
+            updateProgress();
+        });
+
+        // 導出測試結果
+        function exportResults() {
+            const results = {};
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                results[checkbox.id] = checkbox.checked;
+            });
+            
+            const bugs = [];
+            document.querySelectorAll('.bug-item textarea').forEach((textarea, index) => {
+                if (textarea.value.trim()) {
+                    bugs.push({
+                        id: index + 1,
+                        description: textarea.value.trim(),
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            });
+
+            const report = {
+                timestamp: new Date().toISOString(),
+                testResults: results,
+                bugs: bugs,
+                summary: {
+                    total: Object.keys(results).length,
+                    passed: Object.values(results).filter(v => v).length,
+                    failed: Object.values(results).filter(v => !v).length
+                }
+            };
+
+            // 下載 JSON 文件
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ui-test-report-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 重置所有測試
+        function resetTests() {
+            if (confirm('確定要重置所有測試記錄嗎？')) {
+                document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                    localStorage.removeItem(`test-${checkbox.id}`);
+                });
+                document.getElementById('bug-list').innerHTML = '';
+                updateProgress();
+            }
+        }
+    </script>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <button onclick="exportResults()" style="margin: 5px; padding: 10px 20px;">導出測試結果</button>
+        <button onclick="resetTests()" style="margin: 5px; padding: 10px 20px;">重置測試</button>
+    </div>
+
+    <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px;">
+        <h3>💡 測試提示</h3>
+        <ul>
+            <li>首先確保前端服務器在 <code>http://localhost:5002</code> 運行</li>
+            <li>確保後端服務器在 <code>http://localhost:8000</code> 運行</li>
+            <li>按照優先級順序進行測試（HIGH → MEDIUM → LOW）</li>
+            <li>發現問題時立即記錄到問題回報區域</li>
+            <li>測試進度會自動保存到瀏覽器本地存儲</li>
+        </ul>
+    </div>
+</body>
+</html>

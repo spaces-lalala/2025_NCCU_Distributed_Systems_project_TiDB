@@ -1,30 +1,79 @@
 <template>
   <div class="register-page">
-    <h2>使用者註冊</h2>
-    <el-form
-      ref="registerFormRef"
-      :model="registerForm"
-      :rules="registerRules"
-      label-width="120px"
-      class="register-form"
-      @submit.prevent="submitForm"
-    >
-      <el-form-item label="會員名稱" prop="name">
-        <el-input v-model="registerForm.name" />
-      </el-form-item>
-      <el-form-item label="Email" prop="email">
-        <el-input v-model="registerForm.email" type="email" />
-      </el-form-item>
-      <el-form-item label="密碼" prop="password">
-        <el-input v-model="registerForm.password" type="password" show-password />
-      </el-form-item>
-      <el-form-item label="確認密碼" prop="confirmPassword">
-        <el-input v-model="registerForm.confirmPassword" type="password" show-password />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" native-type="submit" :loading="isLoading">註冊</el-button>
-      </el-form-item>
-    </el-form>
+    <div class="register-container">
+      <div class="register-header">
+        <h2 class="register-title">使用者註冊</h2>
+        <p class="register-subtitle">加入我們，享受優質購物體驗</p>
+      </div>
+      
+      <el-form
+        ref="registerFormRef"
+        :model="registerForm"
+        :rules="registerRules"
+        label-width="0"
+        class="register-form"
+        @submit.prevent="submitForm"
+      >
+        <el-form-item prop="name">
+          <el-input 
+            v-model="registerForm.name" 
+            placeholder="請輸入會員名稱"
+            size="large"
+            prefix-icon="User"
+          />
+        </el-form-item>
+        
+        <el-form-item prop="email">
+          <el-input 
+            v-model="registerForm.email" 
+            type="email" 
+            placeholder="請輸入 Email"
+            size="large"
+            prefix-icon="Message"
+          />
+        </el-form-item>
+        
+        <el-form-item prop="password">
+          <el-input 
+            v-model="registerForm.password" 
+            type="password" 
+            placeholder="請輸入密碼"
+            show-password
+            size="large"
+            prefix-icon="Lock"
+          />
+        </el-form-item>
+        
+        <el-form-item prop="confirmPassword">
+          <el-input 
+            v-model="registerForm.confirmPassword" 
+            type="password" 
+            placeholder="請確認密碼"
+            show-password
+            size="large"
+            prefix-icon="Lock"
+          />
+        </el-form-item>
+        
+        <el-form-item>
+          <el-button 
+            type="primary" 
+            native-type="submit" 
+            :loading="isLoading"
+            class="register-button"
+            size="large"
+          >
+            註冊
+          </el-button>
+        </el-form-item>
+      </el-form>
+      
+      <div class="register-footer">
+        <router-link to="/login" class="login-link">
+          已有帳號？立即登入
+        </router-link>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -111,15 +160,96 @@ const submitForm = async () => {
 
 <style scoped>
 .register-page {
+  min-height: 60vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 20px;
+  justify-content: center;
+  padding: var(--spacing-lg);
+}
+
+.register-container {
+  width: 100%;
+  max-width: 450px;
+  background-color: var(--bg-color);
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--shadow-dark);
+  padding: var(--spacing-xxl);
+  border: 1px solid var(--border-lighter);
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.register-title {
+  font-size: var(--font-size-xxl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.register-subtitle {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  margin-bottom: 0;
 }
 
 .register-form {
-  width: 100%;
-  max-width: 400px;
-  margin-top: 20px;
+  margin-bottom: var(--spacing-lg);
 }
-</style> 
+
+.register-form .el-form-item {
+  margin-bottom: var(--spacing-lg);
+}
+
+.register-form .el-input {
+  border-radius: var(--border-radius-base);
+}
+
+.register-button {
+  width: 100%;
+  height: 48px;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  border-radius: var(--border-radius-base);
+}
+
+.register-footer {
+  text-align: center;
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-extra-light);
+}
+
+.login-link {
+  color: var(--primary-color);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.login-link:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .register-page {
+    padding: var(--spacing-md);
+    align-items: flex-start;
+    padding-top: var(--spacing-xxl);
+  }
+  
+  .register-container {
+    max-width: 100%;
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-light);
+  }
+  
+  .register-title {
+    font-size: var(--font-size-xl);
+  }
+}
+</style>

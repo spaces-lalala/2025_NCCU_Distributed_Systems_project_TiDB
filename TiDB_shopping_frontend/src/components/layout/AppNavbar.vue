@@ -43,7 +43,7 @@ const authStore = useAuthStore();
 const cartStore = useCartStore();
 
 const isLoggedIn = computed(() => authStore.isAuthenticated);
-const cartItemCount = computed(() => cartStore.cartItemCount);
+const cartItemCount = computed(() => cartStore.getTotalItemQuantity);
 
 const handleLogout = () => {
   authStore.logout();
@@ -57,39 +57,72 @@ const handleLogout = () => {
 
 <style scoped>
 .app-navbar {
-  background-color: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
-  padding: 0 20px; /* Add some horizontal padding */
+  background-color: var(--bg-color);
+  border-bottom: 1px solid var(--border-light);
+  padding: 0 var(--spacing-lg);
+  box-shadow: var(--shadow-light);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .logo-link {
   display: flex;
   align-items: center;
   text-decoration: none;
-  color: #303133; /* Element Plus default text color */
-  font-size: 20px;
-  font-weight: bold;
+  color: var(--text-primary);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  transition: color 0.2s ease;
+}
+
+.logo-link:hover {
+  color: var(--primary-color);
 }
 
 .logo-image {
-  height: 40px; /* Adjust as needed */
-  margin-right: 10px;
+  height: 40px;
+  margin-right: var(--spacing-sm);
 }
 
 .nav-menu {
-  border-bottom: none; /* Remove default border from el-menu */
+  border-bottom: none;
   display: flex;
-  justify-content: flex-end; /* Align menu items to the right */
+  justify-content: flex-end;
+  background-color: transparent;
 }
 
-/* Ensure sub-menu items are also aligned if needed */
-.el-menu--horizontal .el-menu .el-menu-item,
-.el-menu--horizontal .el-menu .el-sub-menu__title {
-  /* Adjust styling for sub-menu items if necessary */
+.nav-menu .el-menu-item {
+  font-weight: 500;
+  color: var(--text-regular);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.nav-menu .el-menu-item:hover {
+  color: var(--primary-color);
+  background-color: var(--bg-page);
+}
+
+.nav-menu .el-menu-item.is-active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  background-color: transparent;
 }
 
 .cart-badge {
-  margin-left: 5px;
-  transform: translateY(-2px); /* Fine-tune badge position */
+  margin-left: var(--spacing-xs);
+  transform: translateY(-2px);
 }
-</style> 
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .app-navbar {
+    padding: 0 var(--spacing-md);
+  }
+  
+  .logo-link {
+    font-size: var(--font-size-lg);
+  }
+}
+</style>

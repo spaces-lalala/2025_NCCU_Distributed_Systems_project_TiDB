@@ -22,7 +22,7 @@ def list_products(
     # 篩選分類
     if category:
         cat = db.query(Category).filter(Category.name == category).first()
-        if cat:
+        if (cat):
             query = query.filter(Product.category_name == cat.name)
         else:
             return []
@@ -296,3 +296,206 @@ def verify_htap_functionality(db: Session = Depends(get_db)):
             "message": f"HTAP 驗證失敗: {str(e)}",
             "data": {}
         }
+
+# 新增管理端庫存維護 API
+@router.get("/admin/products", response_model=List[ProductOut])
+def get_all_products_admin(db: Session = Depends(get_db)):
+    """
+    🔧 管理端：獲取所有商品列表（包括庫存信息）
+    用於庫存維護管理
+    """
+    try:
+        products = db.query(Product).all()
+        return products
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"獲取商品列表失敗: {str(e)}")
+
+@router.put("/admin/products/{product_id}/stock")
+def update_product_stock(
+    product_id: int,
+    new_stock: int,
+    db: Session = Depends(get_db)
+):
+    """
+    🔄 管理端：更新商品庫存
+    允許管理員直接修改商品庫存數量
+    """
+    try:
+        product = db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail="商品不存在")
+        
+        if new_stock < 0:
+            raise HTTPException(status_code=400, detail="庫存數量不能為負數")
+        
+        old_stock = product.stock
+        product.stock = new_stock
+        db.commit()
+        db.refresh(product)
+        
+        return {
+            "status": "success",
+            "message": f"商品 '{product.name}' 庫存已更新",
+            "data": {
+                "product_id": product_id,
+                "product_name": product.name,
+                "old_stock": old_stock,
+                "new_stock": new_stock,
+                "updated_at": product.updated_at if hasattr(product, 'updated_at') else None
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"更新庫存失敗: {str(e)}")
+
+@router.post("/admin/products/bulk-update-stock")
+def bulk_update_stock(
+    updates: List[dict],  # [{"product_id": 1, "stock": 100}, ...]
+    db: Session = Depends(get_db)
+):
+    """
+    📦 管理端：批量更新多個商品的庫存
+    """
+    try:
+        updated_products = []
+        
+        for update in updates:
+            product_id = update.get("product_id")
+            new_stock = update.get("stock")
+            
+            if product_id is None or new_stock is None:
+                continue
+                
+            if new_stock < 0:
+                continue
+                
+            product = db.query(Product).filter(Product.id == product_id).first()
+            if product:
+                old_stock = product.stock
+                product.stock = new_stock
+                updated_products.append({
+                    "product_id": product_id,
+                    "product_name": product.name,
+                    "old_stock": old_stock,
+                    "new_stock": new_stock
+                })
+        
+        db.commit()
+        
+        return {
+            "status": "success",
+            "message": f"成功更新 {len(updated_products)} 個商品的庫存",
+            "updated_products": updated_products
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"批量更新庫存失敗: {str(e)}")
+
+@router.post("/admin/sync-sold-fields")
+def sync_sold_fields(db: Session = Depends(get_db)):
+    """
+    🔄 管理端：手動同步所有產品的 sold 欄位
+    重新計算所有商品的實際銷量並更新 sold 欄位
+    """
+    from sqlalchemy import func, case
+    from models.order_item import OrderItem
+    from models.order import Order
+    
+    try:
+        # 計算所有商品的實際銷量
+        sales_data = (
+            db.query(
+                Product.id,
+                func.coalesce(func.sum(
+                    case(
+                        (Order.status.in_(["PENDING", "paid", "shipped", "delivered"]), OrderItem.quantity),
+                        else_=0
+                    )
+                ), 0).label("actual_sales")
+            )
+            .outerjoin(OrderItem, Product.id == OrderItem.product_id)
+            .outerjoin(Order, Order.id == OrderItem.order_id)
+            .group_by(Product.id)
+            .all()
+        )
+        
+        updated_products = []
+        for product_id, actual_sales in sales_data:
+            product = db.query(Product).filter(Product.id == product_id).first()
+            if product:
+                old_sold = product.sold
+                product.sold = int(actual_sales)
+                updated_products.append({
+                    "product_id": product_id,
+                    "product_name": product.name,
+                    "old_sold": old_sold,
+                    "new_sold": int(actual_sales)
+                })
+        
+        db.commit()
+        
+        return {
+            "status": "success",
+            "message": f"成功同步 {len(updated_products)} 個商品的銷量數據",
+            "updated_products": updated_products
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"同步銷量數據失敗: {str(e)}")
+
+@router.get("/admin/stock-alerts")
+def get_stock_alerts(
+    low_stock_threshold: int = 10,
+    db: Session = Depends(get_db)
+):
+    """
+    ⚠️ 管理端：獲取庫存預警信息
+    顯示庫存不足或缺貨的商品
+    """
+    try:
+        # 庫存不足的商品
+        low_stock_products = (
+            db.query(Product)
+            .filter(Product.stock <= low_stock_threshold, Product.stock > 0)
+            .all()
+        )
+        
+        # 缺貨商品
+        out_of_stock_products = (
+            db.query(Product)
+            .filter(Product.stock <= 0)
+            .all()
+        )
+        
+        return {
+            "status": "success",
+            "data": {
+                "low_stock_products": [
+                    {
+                        "id": p.id,
+                        "name": p.name,
+                        "current_stock": p.stock,
+                        "price": p.price
+                    }
+                    for p in low_stock_products
+                ],
+                "out_of_stock_products": [
+                    {
+                        "id": p.id,
+                        "name": p.name,
+                        "current_stock": p.stock,
+                        "price": p.price
+                    }
+                    for p in out_of_stock_products
+                ],
+                "alerts_summary": {
+                    "low_stock_count": len(low_stock_products),
+                    "out_of_stock_count": len(out_of_stock_products),
+                    "threshold": low_stock_threshold
+                }
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"獲取庫存預警失敗: {str(e)}")
