@@ -3,6 +3,7 @@ from typing import List
 from sqlalchemy.orm import Session
 from database import get_db
 from models import Order, OrderItem, Product
+from models.order import PriceAdjustHistory
 from schemas import OrderOut, OrderCreationRequest, OrderItemBase
 from schemas.order import OrderOut
 from schemas.order_item import OrderItemOut
@@ -48,8 +49,10 @@ def create_order(
         # 產品存在性和庫存已在上面檢查過，但我們需要再次獲取以更新庫存
         
         product.stock -= item.quantity
-        if product.stock < 500:
-            product.price+=10
+        already_adjusted = db.query(PriceAdjustHistory).filter_by(product_id=product.id).first()
+        if product.stock < 500 and not already_adjusted:
+            product.price += 10
+            db.add(PriceAdjustHistory(product_id=product.id, adjusted_at=datetime.utcnow()))
         
         order_item = OrderItem(
             id=str(uuid.uuid4()),
