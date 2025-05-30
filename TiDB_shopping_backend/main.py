@@ -297,8 +297,29 @@ def update_user_profile(
 # 訂單相關路由已移至 api/orders.py 模組
 
 
+# 設定 CORS（讓前端能跨網域存取）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 或指定你的前端網址
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+METABASE_SITE_URL = "http://localhost:3000"
+METABASE_SECRET_KEY = "cca8c9f2d5046a346971cc4a023d2ea0f773333dd26f6b062b5ea8669497f5ca"
 
+@app.get("/api/metabase_url")
+def get_metabase_embed_url():
+    payload = {
+        "resource": {"dashboard": 4},  # <--- 這邊填你的 dashboard ID
+        "params": {},
+        "exp": round(time.time()) + 600  # 過期時間：10分鐘
+    }
+
+    token = jwt.encode(payload, METABASE_SECRET_KEY, algorithm="HS256")
+    iframe_url = f"{METABASE_SITE_URL}/embed/dashboard/{token}#bordered=true&titled=true"
+
+    return {"url": iframe_url}
 
 
 
