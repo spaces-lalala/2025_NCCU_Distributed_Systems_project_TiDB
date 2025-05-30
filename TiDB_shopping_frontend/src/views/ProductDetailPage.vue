@@ -85,12 +85,11 @@ const fetchProductDetails = async () => {
 
     const data: Product = await response.json();
     // 調整價格：庫存小於 500 就漲價 10 元
-    const adjustedPrice = data.stock < 500 ? data.price + 10 : data.price;
 
     // 若有需要調整圖片欄位
     product.value = {
       ...data,
-      price: adjustedPrice, // 覆蓋價格
+      //price: adjustedPrice, // 覆蓋價格
       // imageUrl: data.image_url,  // 轉換圖片欄位
       imageUrl: productImageMap[data.name] ?? data.image_url ?? '', // 優先用 map，再 fallback
     };
