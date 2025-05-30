@@ -35,3 +35,8 @@ class Product(Base):
     category_name = Column(String(100), ForeignKey("categories.name"))
 
     category = relationship("Category", back_populates="products")
+
+class PriceAdjustHistory(Base):
+    __tablename__ = "price_adjust_history"
+    product_id = Column(Integer, primary_key=True)
+    adjusted_at = Column(DateTime)
