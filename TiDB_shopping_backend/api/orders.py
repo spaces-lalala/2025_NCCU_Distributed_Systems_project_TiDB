@@ -48,6 +48,8 @@ def create_order(
         # 產品存在性和庫存已在上面檢查過，但我們需要再次獲取以更新庫存
         
         product.stock -= item.quantity
+        if product.stock < 500:
+            product.price+=10
         
         order_item = OrderItem(
             id=str(uuid.uuid4()),
