@@ -13,12 +13,15 @@ engine = create_engine(
     connect_args={
         "ssl": {
             "ca": os.path.join(os.path.dirname(__file__), "isrgrootx1.pem")
-        }
+        },
+        "connect_timeout": 3  # connection timeout in seconds
     },
     echo=True,
     pool_pre_ping=True,
     pool_recycle=3600,
+    pool_timeout=5  # wait max 5s for pool before error
 )
+
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
